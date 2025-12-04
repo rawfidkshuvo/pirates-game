@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { initializeApp } from "firebase/app";
 import {
   getAuth,
@@ -27,7 +27,6 @@ import {
   Bomb,
   Coins,
   Ship,
-  Ghost,
   Crown,
   Info,
   LogOut,
@@ -42,23 +41,25 @@ import {
   BookOpen,
   Compass,
   Trash2,
+  History,
+  ArrowRight,
+  Home,
 } from "lucide-react";
 
 // --- Firebase Config & Init ---
 const firebaseConfig = {
-  apiKey: "AIzaSyDf86JHBvY9Y1B1x8QDbJkASmlANouEvX0",
-  authDomain: "card-games-28729.firebaseapp.com",
-  projectId: "card-games-28729",
-  storageBucket: "card-games-28729.firebasestorage.app",
-  messagingSenderId: "466779458834",
-  appId: "1:466779458834:web:c5e264df6d9f0bd56d37cb",
+  apiKey: "AIzaSyBjIjK53vVJW1y5RaqEFGSFp0ECVDBEe1o",
+  authDomain: "game-hub-ff8aa.firebaseapp.com",
+  projectId: "game-hub-ff8aa",
+  storageBucket: "game-hub-ff8aa.firebasestorage.app",
+  messagingSenderId: "586559578902",
+  appId: "1:586559578902:web:e2c7114fcf22055a6aa637",
 };
-
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const APP_ID = "pirates-game-v1";
+const APP_ID = typeof __app_id !== "undefined" ? __app_id : "pirates-game-v1";
 
 // --- Game Constants ---
 const CARDS = {
@@ -171,49 +172,86 @@ const shuffle = (array) => {
 
 // --- Sub-Components ---
 
-const FloatingBackground = () => {
-  const items = [
-    { Icon: Skull, left: "10%", delay: "0s", duration: "15s" },
-    { Icon: Anchor, left: "30%", delay: "5s", duration: "18s" },
-    { Icon: Footprints, left: "70%", delay: "2s", duration: "20s" },
-    { Icon: Sword, left: "50%", delay: "8s", duration: "12s" },
-    { Icon: Bomb, left: "85%", delay: "1s", duration: "16s" },
-    { Icon: Coins, left: "20%", delay: "10s", duration: "14s" },
-    { Icon: Ship, left: "60%", delay: "12s", duration: "25s" },
-  ];
+// UPDATED: Much subtler red gradient (mostly dark gray/black with hint of red)
+const FloatingBackground = () => (
+  <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+    <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-900 via-gray-950 to-black" />
+    <div className="absolute top-0 left-0 w-full h-full bg-red-900/10 mix-blend-overlay" />
+    <div
+      className="absolute inset-0 opacity-10"
+      style={{
+        backgroundImage:
+          'url("https://www.transparenttextures.com/patterns/black-scales.png")',
+      }}
+    ></div>
+  </div>
+);
 
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-      <style>
-        {`
-          @keyframes floatUp {
-            0% { transform: translateY(0) rotate(0deg); opacity: 0; }
-            10% { opacity: 0.4; } 
-            90% { opacity: 0.4; }
-            100% { transform: translateY(-120vh) rotate(360deg); opacity: 0; }
-          }
-        `}
-      </style>
-      {items.map((item, i) => (
-        <div
-          key={i}
-          className="absolute text-white/30 opacity-40"
-          style={{
-            left: item.left,
-            bottom: "-10%",
-            animation: `floatUp ${item.duration} linear infinite`,
-            animationDelay: item.delay,
-          }}
+// Pirates Game Footer
+const PiratesLogo = () => (
+  <div className="flex items-center justify-center gap-1 opacity-40 mt-auto pb-2 pt-2 relative z-10">
+    <Ship size={12} className="text-red-500" />
+    <span className="text-[10px] font-black tracking-widest text-red-500 uppercase">
+      PIRATES
+    </span>
+  </div>
+);
+
+// UPDATED: Leave Modal logic
+const LeaveConfirmModal = ({
+  onConfirmLeave,
+  onConfirmLobby,
+  onCancel,
+  isHost,
+  inGame,
+}) => (
+  <div className="fixed inset-0 bg-black/90 z-[200] flex items-center justify-center p-4 animate-in fade-in">
+    <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 max-w-sm w-full text-center shadow-2xl">
+      <h3 className="text-xl font-bold text-white mb-2">Abandon Ship?</h3>
+      <p className="text-gray-400 mb-6 text-sm">
+        {inGame
+          ? "Leaving now will end the game for everyone!"
+          : "Leaving the lobby will disconnect you."}
+      </p>
+      <div className="flex flex-col gap-3">
+        <button
+          onClick={onCancel}
+          className="bg-gray-700 hover:bg-gray-600 text-white py-3 rounded font-bold transition-colors"
         >
-          <item.Icon size={80} />
-        </div>
-      ))}
-    </div>
-  );
-};
+          Stay (Cancel)
+        </button>
 
-// Replaces simple alerts with a nice UI
-const InfoModal = ({ title, text, onClose, type = "info" }) => (
+        {/* Lobby Button - Only visible in GAME view and only for HOST */}
+        {inGame && isHost && (
+          <button
+            onClick={onConfirmLobby}
+            className="py-3 rounded font-bold transition-colors flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white"
+          >
+            <Home size={18} /> Return Crew to Lobby
+          </button>
+        )}
+
+        <button
+          onClick={onConfirmLeave}
+          className="bg-red-600 hover:bg-red-500 text-white py-3 rounded font-bold transition-colors flex items-center justify-center gap-2"
+        >
+          <LogOut size={18} /> Leave Game
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+// Updated InfoModal to support displaying Cards
+const InfoModal = ({
+  title,
+  text,
+  onClose,
+  type = "info",
+  card = null,
+  compareCard = null,
+  labels = [],
+}) => (
   <div className="fixed inset-0 bg-black/90 z-[150] flex items-center justify-center p-4 animate-in fade-in">
     <div className="bg-gray-800 border-2 border-gray-600 rounded-xl p-6 w-full max-w-sm shadow-2xl relative">
       <div className="flex flex-col items-center text-center gap-4">
@@ -221,12 +259,43 @@ const InfoModal = ({ title, text, onClose, type = "info" }) => (
           <AlertTriangle className="text-red-500 w-12 h-12" />
         ) : type === "spy" ? (
           <Eye className="text-emerald-400 w-12 h-12" />
+        ) : type === "sword" ? (
+          <Sword className="text-red-400 w-12 h-12" />
+        ) : type === "round_end" ? (
+          <Trophy className="text-yellow-400 w-12 h-12 animate-bounce" />
         ) : (
           <Info className="text-blue-400 w-12 h-12" />
         )}
 
         <h3 className="text-2xl font-bold text-white">{title}</h3>
         <p className="text-gray-300 text-lg">{text}</p>
+
+        {/* Display Card if provided */}
+        {(card || compareCard) && (
+          <div className="flex gap-4 justify-center items-center my-2">
+            {card && (
+              <div className="flex flex-col items-center">
+                <span className="text-xs text-gray-400 mb-1 font-bold text-yellow-500">
+                  {labels[0] || "Target Hand"}
+                </span>
+                <CardDisplay type={card} small />
+              </div>
+            )}
+            {compareCard && (
+              <>
+                <div className="font-bold text-xl text-gray-500">
+                  <ArrowRight size={24} />
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-xs text-gray-400 mb-1 font-bold text-yellow-500">
+                    {labels[1] || "Attacker"}
+                  </span>
+                  <CardDisplay type={compareCard} small />
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         <button
           onClick={onClose}
@@ -235,10 +304,12 @@ const InfoModal = ({ title, text, onClose, type = "info" }) => (
               ? "bg-red-600 hover:bg-red-500"
               : type === "spy"
               ? "bg-emerald-600 hover:bg-emerald-500"
+              : type === "round_end"
+              ? "bg-yellow-600 hover:bg-yellow-500"
               : "bg-blue-600 hover:bg-blue-500"
           }`}
         >
-          Okay
+          {type === "round_end" ? "Continue" : "Okay"}
         </button>
       </div>
     </div>
@@ -250,7 +321,7 @@ const GameGuideModal = ({ onClose }) => (
     <div className="bg-gray-900 md:rounded-2xl w-full max-w-5xl h-full md:h-auto md:max-h-[90vh] overflow-hidden border-none md:border border-gray-700 shadow-2xl flex flex-col">
       <div className="p-4 md:p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800">
         <div className="flex flex-col">
-          <h2 className="text-2xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 uppercase tracking-widest">
+          <h2 className="text-2xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-500 uppercase tracking-widest">
             GAME GUIDE
           </h2>
           <span className="text-gray-400 text-xs md:text-sm font-medium tracking-wide">
@@ -267,7 +338,7 @@ const GameGuideModal = ({ onClose }) => (
 
       <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-10 text-gray-300 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
         {/* Section 1: Objective */}
-        <div className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 p-4 md:p-6 rounded-2xl border border-blue-700/30">
+        <div className="bg-gradient-to-r from-red-900/30 to-orange-900/30 p-4 md:p-6 rounded-2xl border border-red-700/30">
           <h3 className="text-xl md:text-2xl font-bold text-white mb-3 flex items-center gap-3">
             <Trophy className="text-yellow-400 fill-current" size={24} /> The
             Objective
@@ -291,43 +362,46 @@ const GameGuideModal = ({ onClose }) => (
         {/* Section 2: The Crew (Cards) */}
         <div>
           <h3 className="text-xl md:text-2xl font-bold text-white mb-6 flex items-center gap-3">
-            <User className="text-purple-400" size={24} /> The Crew (Cards)
+            <User className="text-red-400" size={24} /> The Crew (Cards)
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-3 md:gap-4">
             {Object.values(CARDS)
               .sort((a, b) => a.val - b.val)
-              .map((card) => (
-                <div
-                  key={card.name}
-                  className="flex items-start gap-3 md:gap-4 bg-gray-800/50 p-3 md:p-4 rounded-xl border border-gray-700 hover:border-gray-500 transition-colors"
-                >
+              .map((card) => {
+                const Icon = card.icon;
+                return (
                   <div
-                    className={`p-3 md:p-4 rounded-xl ${card.bg} border border-gray-600 shadow-lg shrink-0`}
+                    key={card.name}
+                    className="flex items-start gap-3 md:gap-4 bg-gray-800/50 p-3 md:p-4 rounded-xl border border-gray-700 hover:border-gray-500 transition-colors"
                   >
-                    <card.icon className={`${card.color}`} size={24} />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex justify-between items-center w-full mb-1">
-                      <h4 className="font-bold text-white text-base md:text-lg">
-                        {card.name}
-                      </h4>
-                      <span className="text-xs bg-black/60 px-2 py-1 rounded text-gray-300 font-mono border border-gray-600">
-                        Val: {card.val}
-                      </span>
+                    <div
+                      className={`p-3 md:p-4 rounded-xl ${card.bg} border border-gray-600 shadow-lg shrink-0`}
+                    >
+                      <Icon className={`${card.color}`} size={24} />
                     </div>
-                    <p className="text-xs md:text-sm text-gray-400 leading-snug">
-                      {card.desc}
-                    </p>
+                    <div className="flex-1">
+                      <div className="flex justify-between items-center w-full mb-1">
+                        <h4 className="font-bold text-white text-base md:text-lg">
+                          {card.name}
+                        </h4>
+                        <span className="text-xs bg-black/60 px-2 py-1 rounded text-gray-300 font-mono border border-gray-600">
+                          Val: {card.val}
+                        </span>
+                      </div>
+                      <p className="text-xs md:text-sm text-gray-400 leading-snug">
+                        {card.desc}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
           </div>
         </div>
 
         {/* Section 3: How It Works */}
         <div>
           <h3 className="text-xl md:text-2xl font-bold text-white mb-6 flex items-center gap-3">
-            <Compass className="text-green-400" size={24} /> How It Works
+            <Compass className="text-orange-400" size={24} /> How It Works
           </h3>
           <div className="space-y-6 relative pl-4 border-l-2 border-gray-700 ml-4">
             {/* Step 1 */}
@@ -364,7 +438,7 @@ const GameGuideModal = ({ onClose }) => (
       <div className="p-4 md:p-6 bg-gray-800 border-t border-gray-700 text-center sticky bottom-0">
         <button
           onClick={onClose}
-          className="w-full md:w-auto bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white px-10 py-3 md:py-4 rounded-xl font-bold text-lg transition-all shadow-xl"
+          className="w-full md:w-auto bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white px-10 py-3 md:py-4 rounded-xl font-bold text-lg transition-all shadow-xl"
         >
           Got it, Let's Play!
         </button>
@@ -482,16 +556,22 @@ export default function PiratesGame() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showGuide, setShowGuide] = useState(false);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
 
   // UI States
   const [showLogs, setShowLogs] = useState(false);
   const [selectedCard, setSelectedCard] = useState(null);
   const [selectedGuess, setSelectedGuess] = useState("");
   const [guardModalTarget, setGuardModalTarget] = useState(null);
-  const [guardPendingGuess, setGuardPendingGuess] = useState(null); // Added for new Guard confirm flow
+  const [guardPendingGuess, setGuardPendingGuess] = useState(null);
 
-  // Popup State
-  const [infoModal, setInfoModal] = useState(null); // { title, text, type }
+  // Popup Queue State (Replaces simple infoModal)
+  const [modalQueue, setModalQueue] = useState([]);
+  const [activeModal, setActiveModal] = useState(null);
+
+  // Track last processed action to avoid duplicate popups
+  const lastProcessedActionId = useRef(null);
+  const lastProcessedRoundId = useRef(null);
 
   // --- Auth & Listener ---
   useEffect(() => {
@@ -515,17 +595,16 @@ export default function PiratesGame() {
         if (snap.exists()) {
           const data = snap.data();
 
-          // Check if I was kicked or if the room is valid
           const isInRoom = data.players.some((p) => p.id === user.uid);
           if (!isInRoom) {
             setRoomId("");
             setView("menu");
-            setError("You have left the room or were kicked.");
+            setError("The Captain abandoned the ship! (Room Closed)");
             return;
           }
 
           setGameState(data);
-          if (data.status === "playing") {
+          if (data.status === "playing" || data.status === "finished") {
             setView("game");
           } else if (data.status === "lobby") {
             setView("lobby");
@@ -533,16 +612,74 @@ export default function PiratesGame() {
         } else {
           setRoomId("");
           setView("menu");
-          setError("Room closed or does not exist.");
+          setError("The Captain abandoned the ship! (Room Closed)");
         }
       }
     );
     return () => unsub();
   }, [roomId, user]);
 
+  // Queue Processor Effect
+  useEffect(() => {
+    if (!activeModal && modalQueue.length > 0) {
+      setActiveModal(modalQueue[0]);
+      setModalQueue((prev) => prev.slice(1));
+    }
+  }, [activeModal, modalQueue]);
+
+  // Listener for Opponent Action Notifications AND Round End
+  useEffect(() => {
+    if (!gameState || !user) return;
+
+    // 1. Action Notifications (Individual)
+    if (gameState.lastAction) {
+      const action = gameState.lastAction;
+      if (action.id !== lastProcessedActionId.current) {
+        if (action.targetId === user.uid) {
+          lastProcessedActionId.current = action.id;
+          setModalQueue((prev) => [
+            ...prev,
+            {
+              title: "Action Alert!",
+              text: action.message,
+              type:
+                action.type === "SWORDSMAN"
+                  ? "sword"
+                  : action.type === "SPY"
+                  ? "spy"
+                  : "warning",
+              card: action.cardToShow,
+              compareCard: action.compareCard,
+              labels: action.labels,
+            },
+          ]);
+        }
+      }
+    }
+
+    // 2. Round End Notification (Global)
+    if (gameState.lastRoundResult) {
+      const roundRes = gameState.lastRoundResult;
+      // Only show if new and valid
+      if (roundRes.id !== lastProcessedRoundId.current) {
+        lastProcessedRoundId.current = roundRes.id;
+        setModalQueue((prev) => [
+          ...prev,
+          {
+            title: `Round ${roundRes.round} Complete!`,
+            text: `${roundRes.winnerName} won the round and earned a Coin!`,
+            type: "round_end",
+            card: null,
+            compareCard: null,
+          },
+        ]);
+      }
+    }
+  }, [gameState, user]);
+
   // --- Helper to show modal instead of alert ---
-  const showAlert = (title, text, type = "error") => {
-    setInfoModal({ title, text, type });
+  const showAlert = (title, text, type = "error", card = null) => {
+    setModalQueue((prev) => [...prev, { title, text, type, card }]);
   };
 
   // --- Actions ---
@@ -567,7 +704,7 @@ export default function PiratesGame() {
         },
       ],
       deck: [],
-      deckConfig: { guards: 6, merchants: 2 }, // Default config
+      deckConfig: { guards: 6, merchants: 2 },
       discardPile: [],
       logs: [],
       turnIndex: 0,
@@ -575,6 +712,8 @@ export default function PiratesGame() {
       burntCard: null,
       thiefActive: null,
       pendingAction: null,
+      lastAction: null,
+      lastRoundResult: null, // New field for round end
     };
     await setDoc(
       doc(db, "artifacts", APP_ID, "public", "data", "rooms", newId),
@@ -616,7 +755,6 @@ export default function PiratesGame() {
     if (data.players.find((p) => p.id === user.uid)) {
       setRoomId(roomCodeInput);
     } else if (data.players.length < 8) {
-      // Max 8 players
       const newPlayers = [
         ...data.players,
         {
@@ -654,22 +792,25 @@ export default function PiratesGame() {
 
       if (snap.exists()) {
         const data = snap.data();
-        const newPlayers = data.players.filter((p) => p.id !== user.uid);
+        const isHost = data.hostId === user.uid;
 
-        if (newPlayers.length === 0) {
-          // Last player left, delete room
-          await deleteDoc(roomRef);
-        } else {
-          // If host left, pass host to first remaining player
-          let newHostId = data.hostId;
-          if (data.hostId === user.uid) {
-            newHostId = newPlayers[0].id;
+        if (isHost) {
+          // If Host leaves (from lobby), destroy room
+          if (data.status === "lobby") {
+            await deleteDoc(roomRef);
+          } else {
+            // If in Game, end game for everyone
+            await handleGameAbandon(roomRef, data);
           }
-
-          await updateDoc(roomRef, {
-            players: newPlayers,
-            hostId: newHostId,
-          });
+        } else {
+          // If Guest leaves
+          if (data.status === "lobby") {
+            const newPlayers = data.players.filter((p) => p.id !== user.uid);
+            await updateDoc(roomRef, { players: newPlayers });
+          } else {
+            // In Game, handle abandon
+            await handleGameAbandon(roomRef, data);
+          }
         }
       }
     } catch (e) {
@@ -678,6 +819,35 @@ export default function PiratesGame() {
     setRoomId("");
     setView("menu");
     setGameState(null);
+    setShowLeaveConfirm(false);
+  };
+
+  const handleGameAbandon = async (roomRef, data) => {
+    // If game is active, end it and declare winners
+    const remainingPlayers = data.players.filter((p) => p.id !== user.uid);
+    let winnerId = null;
+
+    // If only one remains, or host leaves, game effectively ends.
+    // For simplicity, if anyone leaves mid-game, we trigger 'finished' state
+    // so others see the modal.
+    if (remainingPlayers.length > 0) {
+      // Pick the first remaining player as 'winner' or show 'Game Abandoned' logic
+      // Here we just set the first remaining as winner to show modal
+      winnerId = remainingPlayers[0].id;
+    }
+
+    await updateDoc(roomRef, {
+      status: "finished",
+      winnerId: winnerId,
+      players: data.players.filter((p) => p.id !== user.uid), // Remove leaver
+      logs: arrayUnion({
+        id: Date.now().toString(),
+        text: `${
+          data.players.find((p) => p.id === user.uid)?.name
+        } left the game. Game Over.`,
+        type: "danger",
+      }),
+    });
   };
 
   const kickPlayer = async (targetId) => {
@@ -710,7 +880,6 @@ export default function PiratesGame() {
       config = { guards: 6, merchants: 2 };
     }
 
-    // Generate Deck based on Config
     const deck = [];
     Object.keys(CARDS).forEach((key) => {
       let count = CARDS[key].defaultCount;
@@ -729,7 +898,7 @@ export default function PiratesGame() {
       playedCards: [],
       eliminated: false,
       immune: false,
-      readyForNext: false, // Reset ready state
+      readyForNext: false,
     }));
 
     const startIdx = Math.floor(Math.random() * players.length);
@@ -745,8 +914,13 @@ export default function PiratesGame() {
         discardPile: [],
         turnIndex: startIdx,
         thiefActive: null,
+        lastAction: null,
+        lastRoundResult: null, // Reset for new round
         logs: arrayUnion({
-          text: `--- Round ${state.roundCount} Started ---`,
+          id: Date.now() + Math.random().toString(), // ADDED UNIQUE ID
+          text: `--- Round ${
+            state.roundCount || gameState.roundCount
+          } Started ---`,
           type: "neutral",
         }),
       }
@@ -785,11 +959,17 @@ export default function PiratesGame() {
         logs: [],
         roundCount: 1,
         winnerId: null,
+        lastAction: null,
+        lastRoundResult: null,
       }
     );
   };
 
-  const nextTurn = async (currentState, logs = []) => {
+  const nextTurn = async (
+    currentState,
+    logs = [],
+    actionNotification = null
+  ) => {
     let players = [...currentState.players];
     let deck = [...currentState.deck];
     let turnIndex = currentState.turnIndex;
@@ -797,22 +977,48 @@ export default function PiratesGame() {
 
     const activePlayers = players.filter((p) => !p.eliminated);
 
+    // FIX: ADD UNIQUE IDs TO LOGS TO PREVENT FIRESTORE DEDUPLICATION
+    const uniqueLogs = logs.map((log) => ({
+      ...log,
+      id: log.id || Date.now() + Math.random().toString(),
+    }));
+
+    // Prepare update object
+    let updateData = {
+      players,
+      deck,
+      // Logs are added last to ensure all logic (like thief survival) contributes
+    };
+
+    if (actionNotification) {
+      updateData.lastAction = actionNotification;
+    }
+
     if (activePlayers.length === 1) {
       const winner = activePlayers[0];
       winner.coins += 1;
-      logs.push({
-        text: `Round Over! ${winner.name} is the last survivor (+1 Coin).`,
+      uniqueLogs.push({
+        id: Date.now() + Math.random().toString(),
+        text: `🏁 Round Over! ${winner.name} survives alone (+1 Coin).`,
         type: "success",
       });
+
+      // Prepare Round Result
+      const roundResult = {
+        id: Date.now(),
+        winnerName: winner.name,
+        round: currentState.roundCount || gameState.roundCount,
+      };
+      updateData.lastRoundResult = roundResult;
 
       if (winner.coins >= 10) {
         await updateDoc(
           doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
           {
-            players,
-            logs: arrayUnion(...logs),
+            ...updateData,
             status: "finished",
             winnerId: winner.id,
+            logs: arrayUnion(...uniqueLogs), // Add uniqueLogs here
           }
         );
         return;
@@ -821,9 +1027,9 @@ export default function PiratesGame() {
       await updateDoc(
         doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
         {
-          players,
-          logs: arrayUnion(...logs),
+          ...updateData,
           roundCount: increment(1),
+          logs: arrayUnion(...uniqueLogs), // Add uniqueLogs here
         }
       );
       setTimeout(
@@ -831,9 +1037,9 @@ export default function PiratesGame() {
           startRound({
             ...currentState,
             players,
-            roundCount: currentState.roundCount + 1,
+            roundCount: (currentState.roundCount || gameState.roundCount) + 1,
           }),
-        2500
+        3500 // Increased delay so users can read the popup
       );
       return;
     }
@@ -856,21 +1062,28 @@ export default function PiratesGame() {
         players[idx].coins += 1;
       });
 
-      logs.push({
-        text: `Deck Empty! Winners: ${winners
-          .map((w) => w.name)
-          .join(", ")} (Card Value: ${maxVal}).`,
+      const winnerNames = winners.map((w) => w.name).join(", ");
+      uniqueLogs.push({
+        id: Date.now() + Math.random().toString(),
+        text: `🌊 Deck Empty! Winners: ${winnerNames} (Card Value: ${maxVal}).`,
         type: "success",
       });
+
+      const roundResult = {
+        id: Date.now(),
+        winnerName: winnerNames,
+        round: currentState.roundCount || gameState.roundCount,
+      };
+      updateData.lastRoundResult = roundResult;
 
       if (players.some((p) => p.coins >= 10)) {
         await updateDoc(
           doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
           {
-            players,
-            logs: arrayUnion(...logs),
+            ...updateData,
             status: "finished",
             winnerId: players.find((p) => p.coins >= 10).id,
+            logs: arrayUnion(...uniqueLogs), // Add uniqueLogs here
           }
         );
         return;
@@ -879,9 +1092,9 @@ export default function PiratesGame() {
       await updateDoc(
         doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
         {
-          players,
-          logs: arrayUnion(...logs),
+          ...updateData,
           roundCount: increment(1),
+          logs: arrayUnion(...uniqueLogs), // Add uniqueLogs here
         }
       );
       setTimeout(
@@ -889,9 +1102,9 @@ export default function PiratesGame() {
           startRound({
             ...currentState,
             players,
-            roundCount: currentState.roundCount + 1,
+            roundCount: (currentState.roundCount || gameState.roundCount) + 1,
           }),
-        2500
+        3500
       );
       return;
     }
@@ -903,8 +1116,9 @@ export default function PiratesGame() {
 
     if (thiefActive && thiefActive.playerId === players[nextIdx].id) {
       players[nextIdx].coins += 1;
-      logs.push({
-        text: `${players[nextIdx].name} survived the round as Thief (+1 Coin)!`,
+      uniqueLogs.push({
+        id: Date.now() + Math.random().toString(),
+        text: `👣 ${players[nextIdx].name} survived the round as Thief (+1 Coin)!`,
         type: "success",
       });
       thiefActive = null;
@@ -915,18 +1129,24 @@ export default function PiratesGame() {
     if (deck.length > 0) {
       players[nextIdx].hand.push(deck.pop());
     } else {
-      players[nextIdx].hand.push(currentState.burntCard);
+      // UPDATED: Removed burntCard usage here.
+      // If deck is empty, the round should have ended via the check above.
+      // We do not draw the separated card for normal turns.
     }
+
+    // Final update with next turn info
+    updateData = {
+      ...updateData,
+      deck,
+      turnIndex: nextIdx,
+      thiefActive,
+      players,
+      logs: arrayUnion(...uniqueLogs), // Add uniqueLogs here to catch all pushes
+    };
 
     await updateDoc(
       doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
-      {
-        players,
-        deck,
-        turnIndex: nextIdx,
-        thiefActive,
-        logs: arrayUnion(...logs),
-      }
+      updateData
     );
   };
 
@@ -974,6 +1194,7 @@ export default function PiratesGame() {
     let deck = [...gameState.deck];
     let logs = [];
     let thiefActive = gameState.thiefActive;
+    let actionNotification = null; // Prepare notification object
 
     const hand = me.hand;
     const hasCaptain = hand.includes("CAPTAIN");
@@ -1013,77 +1234,196 @@ export default function PiratesGame() {
 
     if (cardType === "THIEF") {
       logs.push({
-        text: `${me.name} plays Thief. (Gain coin if survived until next turn)`,
+        text: `👣 ${me.name} plays Thief. (Gain coin if survived until next turn)`,
         type: "neutral",
       });
       if (thiefActive) {
-        logs.push({ text: `🚫 Previous Thief thwarted!`, type: "neutral" });
+        logs.push({
+          text: `🚫 Previous Thief thwarted by ${me.name}!`,
+          type: "neutral",
+        });
       }
       thiefActive = { playerId: user.uid, turnSet: gameState.turnIndex };
     } else if (cardType === "GUARD") {
       const target = players.find((p) => p.id === explicitTargetId);
       logs.push({
-        text: `${me.name} plays Guard on ${target.name}, guessing ${CARDS[finalGuess].name}.`,
+        text: `🛡️ ${me.name} used Guard on ${target.name}, guessing ${CARDS[finalGuess].name}.`,
         type: "neutral",
       });
       if (!target.immune) {
         const targetCard = target.hand[0];
         if (targetCard === finalGuess) {
-          eliminate(explicitTargetId, "Guard Correct Guess");
+          eliminate(
+            explicitTargetId,
+            `Guard caught a ${CARDS[finalGuess].name}`
+          );
+          actionNotification = {
+            id: Date.now(),
+            targetId: explicitTargetId,
+            type: "GUARD",
+            message: `${me.name} guessed your card was a ${CARDS[finalGuess].name}. They were CORRECT! You are out.`,
+            cardToShow: targetCard,
+            compareCard: finalGuess,
+            labels: ["You Had", "They Guessed"],
+          };
         } else {
           logs.push({
-            text: `❌ Guard guess wrong. ${target.name} is safe.`,
+            text: `❌ Guard guess wrong. ${target.name} does not have ${CARDS[finalGuess].name}.`,
             type: "neutral",
           });
+          actionNotification = {
+            id: Date.now(),
+            targetId: explicitTargetId,
+            type: "GUARD",
+            message: `${me.name} guessed your card was a ${CARDS[finalGuess].name}. They were WRONG. You are safe.`,
+            cardToShow: targetCard,
+            compareCard: finalGuess,
+            labels: ["You Have", "They Guessed"],
+          };
         }
       } else {
         logs.push({
           text: `🛡️ ${target.name} is immune to the Guard!`,
           type: "warning",
         });
+        actionNotification = {
+          id: Date.now(),
+          targetId: explicitTargetId,
+          type: "GUARD",
+          message: `${me.name} tried to Guard you, but you were Immune!`,
+        };
       }
     } else if (cardType === "SPY") {
       const target = players.find((p) => p.id === explicitTargetId);
       if (!target.immune) {
         logs.push({
-          text: `${me.name} plays Spy and looks at ${target.name}'s hand.`,
+          text: `👁️ ${me.name} plays Spy and looks at ${target.name}'s hand.`,
           type: "neutral",
         });
-        // REPLACED ALERT WITH MODAL
+        // Render Card in the Spy Report
         showAlert(
           "Spy Report",
           `${target.name} is holding: ${CARDS[target.hand[0]].name}`,
-          "spy"
+          "spy",
+          target.hand[0] // Pass card to modal
         );
+        actionNotification = {
+          id: Date.now(),
+          targetId: explicitTargetId,
+          type: "SPY",
+          message: `${me.name} used a Spy to look at your hand.`,
+        };
       } else {
         logs.push({
-          text: `${me.name} tried to Spy, but ${target.name} is immune!`,
+          text: `🛡️ ${me.name} tried to Spy, but ${target.name} is immune!`,
           type: "warning",
         });
+        actionNotification = {
+          id: Date.now(),
+          targetId: explicitTargetId,
+          type: "SPY",
+          message: `${me.name} tried to Spy on you, but you were Immune!`,
+        };
       }
     } else if (cardType === "SWORDSMAN") {
       const target = players.find((p) => p.id === explicitTargetId);
       if (!target.immune) {
-        const myVal = CARDS[players[myIdx].hand[0]].val;
-        const targetVal = CARDS[target.hand[0]].val;
+        // Fix: Capture card keys and values BEFORE elimination modification
+        const myCardKey = players[myIdx].hand[0];
+        const targetCardKey = target.hand[0];
+
+        const myVal = CARDS[myCardKey].val;
+        const targetVal = CARDS[targetCardKey].val;
+
+        // Obfuscated log
         logs.push({
-          text: `${me.name} challenges ${target.name} to a Sword Fight!`,
+          text: `⚔️ ${me.name} challenged ${target.name}.`,
           type: "neutral",
         });
-        if (myVal < targetVal)
-          eliminate(user.uid, "Lost Sword Fight (Lower Card)");
-        else if (targetVal < myVal)
-          eliminate(explicitTargetId, "Lost Sword Fight (Lower Card)");
-        else
+
+        if (myVal < targetVal) {
+          eliminate(user.uid, `Lost Sword Fight (Lower Card)`);
+          logs.push({ text: `... ${me.name} was defeated!`, type: "danger" });
+          // Notification to Winner (Target)
+          actionNotification = {
+            id: Date.now(),
+            targetId: explicitTargetId,
+            type: "SWORDSMAN",
+            message: `${me.name} challenged you! Your ${CARDS[targetCardKey].name} beat their ${CARDS[myCardKey].name}. You Won!`,
+            cardToShow: myCardKey,
+            compareCard: targetCardKey,
+            labels: ["Your Hand", "Attacker"], // SWAPPED: Player's hand is left, Opponent's/Guessed is right?
+            // Wait, "Your Hand" usually refers to the viewer (Target).
+            // In "cardToShow", we are showing "myCardKey" (Attacker).
+            // In "compareCard", we are showing "targetCardKey" (Target/Viewer).
+            // Let's swap the cards to match the labels properly.
+            // Target sees: Left = Their Hand (TargetCard), Right = Attacker Hand (MyCard)
+          };
+          // Correcting the card order for the notification object to match "Your Hand" (Left) vs "Guessed/Attacker" (Right)
+          actionNotification.cardToShow = targetCardKey;
+          actionNotification.compareCard = myCardKey;
+
+          // Also show the attacker (current user) a modal result locally since they might die
+          showAlert(
+            "Sword Fight Result",
+            `You challenged ${target.name}. Their ${CARDS[targetCardKey].name} beat your ${CARDS[myCardKey].name}. You Died.`,
+            "sword",
+            targetCardKey
+          );
+        } else if (targetVal < myVal) {
+          eliminate(explicitTargetId, `Lost Sword Fight (Lower Card)`);
+          logs.push({
+            text: `... ${target.name} was defeated!`,
+            type: "danger",
+          });
+          // Notification to Loser (Target)
+          actionNotification = {
+            id: Date.now(),
+            targetId: explicitTargetId,
+            type: "SWORDSMAN",
+            message: `${me.name} challenged you! Your ${CARDS[targetCardKey].name} lost to their ${CARDS[myCardKey].name}. You Died.`,
+            cardToShow: targetCardKey, // Target Hand (Left)
+            compareCard: myCardKey, // Attacker Hand (Right)
+            labels: ["Your Hand", "Attacker"],
+          };
+          showAlert(
+            "Sword Fight Result",
+            `You challenged ${target.name}. Your ${CARDS[myCardKey].name} beat their ${CARDS[targetCardKey].name}. You Won!`,
+            "sword",
+            targetCardKey
+          );
+        } else {
           logs.push({
             text: `⚔️ Sword Fight Tie! Both survive.`,
             type: "neutral",
           });
+          actionNotification = {
+            id: Date.now(),
+            targetId: explicitTargetId,
+            type: "SWORDSMAN",
+            message: `${me.name} challenged you! Tie (${CARDS[targetCardKey].name}). Both survive.`,
+            cardToShow: targetCardKey, // Target Hand
+            compareCard: myCardKey, // Attacker Hand
+            labels: ["Your Hand", "Attacker"],
+          };
+          showAlert(
+            "Sword Fight Result",
+            `Tie! You both have ${CARDS[myCardKey].name}.`,
+            "sword",
+            targetCardKey
+          );
+        }
       } else {
         logs.push({
           text: `🛡️ ${target.name} is immune to Sword Fight!`,
           type: "warning",
         });
+        actionNotification = {
+          id: Date.now(),
+          targetId: explicitTargetId,
+          type: "SWORDSMAN",
+          message: `${me.name} tried to fight you, but you were Immune!`,
+        };
       }
     } else if (cardType === "COOK") {
       players[myIdx].immune = true;
@@ -1098,12 +1438,24 @@ export default function PiratesGame() {
       if (!target.immune) {
         if (target.hand[0] === "PIRATE") {
           logs.push({
-            text: `${me.name} fires Cannon at ${target.name}... It's a Pirate!`,
+            text: `💣 ${me.name} fires Cannon at ${target.name}... It's a Pirate!`,
             type: "danger",
           });
           eliminate(explicitTargetId, "Cannoneer hit a Pirate");
+          actionNotification = {
+            id: Date.now(),
+            targetId: explicitTargetId,
+            type: "CANNONEER",
+            message: `${me.name} fired a Cannon at you. You had a Pirate and were eliminated!`,
+          };
         } else {
           const oldCard = target.hand.pop();
+
+          // Add destroyed card to opponent's history
+          if (!players[targetIdx].playedCards)
+            players[targetIdx].playedCards = [];
+          players[targetIdx].playedCards.push(oldCard);
+
           let newCard;
           if (deck.length > 0) {
             newCard = deck.pop();
@@ -1115,17 +1467,32 @@ export default function PiratesGame() {
             });
           }
           players[targetIdx].hand.push(newCard);
-          deck.unshift(oldCard);
+
           logs.push({
-            text: `💣 ${me.name} used Cannoneer. ${target.name} was forced to switch cards.`,
+            text: `💣 ${me.name} destroyed ${target.name}'s card!`,
             type: "neutral",
           });
+          actionNotification = {
+            id: Date.now(),
+            targetId: explicitTargetId,
+            type: "CANNONEER",
+            message: `${me.name} destroyed your card! It was added to your history. You drew a new one.`,
+            cardToShow: oldCard,
+            compareCard: newCard,
+            labels: ["Destroyed", "New Card"],
+          };
         }
       } else {
         logs.push({
           text: `🛡️ ${target.name} is immune to Cannoneer!`,
           type: "warning",
         });
+        actionNotification = {
+          id: Date.now(),
+          targetId: explicitTargetId,
+          type: "CANNONEER",
+          message: `${me.name} tried to Cannon you, but you were Immune!`,
+        };
       }
     } else if (cardType === "MERCHANT") {
       let drawn = [];
@@ -1138,13 +1505,19 @@ export default function PiratesGame() {
       const pool = [...players[myIdx].hand, ...drawn];
       players[myIdx].hand = [];
 
+      // Fix MERCHANT Logs: Map to unique IDs before update
+      const uniqueLogs = logs.map((l) => ({
+        ...l,
+        id: Date.now() + Math.random().toString(),
+      }));
+
       await updateDoc(
         doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
         {
           players,
           deck,
           thiefActive: thiefActive || null,
-          logs: arrayUnion(...logs),
+          logs: arrayUnion(...uniqueLogs), // Correctly adding unique logs
           discardPile: arrayUnion(cardType),
           merchantState: { pool, originalDeckCount: deck.length },
         }
@@ -1163,15 +1536,30 @@ export default function PiratesGame() {
           text: `⚓ ${me.name} swapped hands with ${players[targetIdx].name}.`,
           type: "neutral",
         });
+        actionNotification = {
+          id: Date.now(),
+          targetId: explicitTargetId,
+          type: "SAILOR",
+          message: `${me.name} swapped hands with you.`,
+          cardToShow: myCard, // Incoming card (New)
+          compareCard: theirCard, // Outgoing card (Taken)
+          labels: ["Taken Card", "Current Hand"],
+        };
       } else {
         logs.push({
           text: `🛡️ ${players[targetIdx].name} is immune to Swap!`,
           type: "warning",
         });
+        actionNotification = {
+          id: Date.now(),
+          targetId: explicitTargetId,
+          type: "SAILOR",
+          message: `${me.name} tried to swap hands with you, but you were Immune!`,
+        };
       }
     } else if (cardType === "CAPTAIN") {
       logs.push({
-        text: `${me.name} plays Captain (No Effect).`,
+        text: `👑 ${me.name} plays Captain (No Effect).`,
         type: "neutral",
       });
     } else if (cardType === "PIRATE") {
@@ -1196,8 +1584,10 @@ export default function PiratesGame() {
         thiefActive: thiefActive || null,
         burntCard: gameState.burntCard,
         deckConfig: gameState.deckConfig,
+        roundCount: gameState.roundCount, // Fix: Passed roundCount explicitly
       },
-      logs
+      logs,
+      actionNotification
     );
   };
 
@@ -1227,12 +1617,13 @@ export default function PiratesGame() {
         thiefActive: gameState.thiefActive,
         burntCard: gameState.burntCard,
         deckConfig: gameState.deckConfig,
+        roundCount: gameState.roundCount, // Fix: Passed roundCount explicitly
       },
       [
         {
-          text: `${
+          text: `💰 ${
             gameState.players.find((p) => p.id === user.uid).name
-          } finished Merchant selection.`,
+          } used Merchant to draw cards and kept one.`,
           type: "neutral",
         },
       ]
@@ -1256,24 +1647,32 @@ export default function PiratesGame() {
 
   if (view === "menu") {
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4 relative overflow-hidden">
+      <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans">
+        <FloatingBackground />
+
         {showGuide && <GameGuideModal onClose={() => setShowGuide(false)} />}
 
-        <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400 font-serif tracking-widest z-10 text-center">
-          PIRATES
-        </h1>
-        <div className="text-lg md:text-xl text-blue-300 font-serif tracking-widest mb-8 opacity-80 z-10 uppercase text-center">
-          Adventure on the sea
+        <div className="z-10 text-center mb-10 animate-in fade-in zoom-in duration-700">
+          <Ship
+            size={64}
+            className="text-red-500 mx-auto mb-4 animate-bounce drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]"
+          />
+          <h1 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-red-500 to-orange-600 font-serif tracking-widest drop-shadow-md">
+            PIRATES
+          </h1>
+          <p className="text-white-400/60 tracking-[0.3em] uppercase mt-2">
+            Adventure on the Sea
+          </p>
         </div>
 
-        <div className="bg-gray-800 p-6 md:p-8 rounded-xl w-full max-w-md border border-gray-700 shadow-2xl z-10">
+        <div className="bg-gray-900/80 backdrop-blur border border-red-500/30 p-8 rounded-2xl w-full max-w-md shadow-2xl z-10 animate-in slide-in-from-bottom-10 duration-700 delay-100">
           {error && (
-            <div className="bg-red-900/50 text-red-200 p-2 mb-4 rounded text-center text-sm">
+            <div className="bg-red-900/50 text-red-200 p-2 mb-4 rounded text-center text-sm border border-red-800">
               {error}
             </div>
           )}
           <input
-            className="w-full bg-gray-900 border border-gray-700 p-3 rounded mb-4 text-white placeholder-gray-500"
+            className="w-full bg-black/50 border border-gray-600 p-3 rounded mb-4 text-white placeholder-gray-500 focus:border-red-500 outline-none transition-colors"
             placeholder="Pirate Name"
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
@@ -1281,21 +1680,22 @@ export default function PiratesGame() {
           <button
             onClick={createRoom}
             disabled={loading}
-            className="w-full bg-red-600 hover:bg-red-500 p-3 rounded font-bold mb-4 flex items-center justify-center gap-2"
+            className="w-full bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 p-4 rounded font-bold mb-4 flex items-center justify-center gap-2 border border-red-500/30 shadow-[0_0_15px_rgba(220,38,38,0.2)] transition-all"
           >
             <Ship size={20} /> Create New Ship
           </button>
-          <div className="flex flex-col md:flex-row gap-2 mb-4">
+
+          <div className="flex flex-col sm:flex-row gap-2 mb-4">
             <input
-              className="flex-1 bg-gray-900 border border-gray-700 p-3 rounded text-white placeholder-gray-500 uppercase"
-              placeholder="Room Code"
+              className="w-full sm:flex-1 bg-black/50 border border-gray-600 p-3 rounded text-white placeholder-gray-500 uppercase font-mono tracking-wider focus:border-red-500 outline-none"
+              placeholder="ROOM CODE"
               value={roomCodeInput}
               onChange={(e) => setRoomCodeInput(e.target.value.toUpperCase())}
             />
             <button
               onClick={joinRoom}
               disabled={loading}
-              className="bg-gray-700 hover:bg-gray-600 p-3 md:px-6 rounded font-bold"
+              className="w-full sm:w-auto bg-gray-800 hover:bg-gray-700 border border-gray-600 px-6 py-3 rounded font-bold transition-colors"
             >
               Join
             </button>
@@ -1307,7 +1707,6 @@ export default function PiratesGame() {
             <BookOpen size={16} /> How to Play
           </button>
         </div>
-        <FloatingBackground />
       </div>
     );
   }
@@ -1319,55 +1718,91 @@ export default function PiratesGame() {
     const playerCount = gameState.players.length;
 
     return (
-      <div className="min-h-screen bg-gray-900 text-white p-4 md:p-6 flex flex-col items-center">
-        <div className="w-full max-w-2xl relative z-10">
-          <div className="flex flex-col md:flex-row justify-between items-center mb-6 md:mb-8 gap-4">
-            <h2 className="text-2xl md:text-3xl font-bold font-serif text-yellow-500">
-              Cabin: {roomId}
+      <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6 relative">
+        <FloatingBackground />
+
+        {/* Leave Confirmation Modal */}
+        {showLeaveConfirm && (
+          <LeaveConfirmModal
+            onCancel={() => setShowLeaveConfirm(false)}
+            onConfirmLeave={leaveRoom}
+            onConfirmLobby={() => {
+              resetToLobby();
+              setShowLeaveConfirm(false);
+            }}
+            isHost={isHost}
+            inGame={false} // Lobby View
+          />
+        )}
+
+        <div className="z-10 w-full max-w-lg bg-gray-900/90 backdrop-blur p-8 rounded-2xl border border-red-900/50 shadow-2xl mb-4">
+          <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
+            <h2 className="text-2xl font-serif text-red-500">
+              Cabin: <span className="text-white font-mono">{roomId}</span>
             </h2>
             <button
-              onClick={leaveRoom}
-              className="text-gray-400 hover:text-white flex items-center gap-2"
+              onClick={() => setShowLeaveConfirm(true)}
+              className="p-2 bg-red-900/30 hover:bg-red-900/50 rounded text-red-300"
+              title="Leave Room"
             >
-              <LogOut size={20} /> Leave
+              <LogOut size={16} />
             </button>
           </div>
 
-          <div className="bg-gray-800 rounded-xl p-4 md:p-6 mb-6">
-            <h3 className="text-gray-400 uppercase tracking-widest mb-4">
-              Crew ({gameState.players.length}/8)
+          <div className="bg-black/20 rounded-xl p-4 mb-8 border border-gray-800">
+            <h3 className="text-gray-500 text-xs uppercase tracking-wider mb-4 flex justify-between">
+              <span>Crew ({gameState.players.length}/8)</span>
             </h3>
-            {gameState.players.map((p) => (
-              <div
-                key={p.id}
-                className="flex justify-between items-center bg-gray-700 p-3 rounded mb-2"
-              >
-                <span className="font-bold flex items-center gap-2">
-                  {p.id === gameState.hostId && (
-                    <Crown size={16} className="text-yellow-400" />
-                  )}{" "}
-                  {p.name}
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-green-400 text-sm">Ready</span>
-                  {isHost && p.id !== user.uid && (
-                    <button
-                      onClick={() => kickPlayer(p.id)}
-                      className="p-1 hover:bg-red-900/50 rounded text-red-400"
-                      title="Kick Player"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  )}
+            <div className="space-y-2">
+              {gameState.players.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between bg-gray-800/50 p-3 rounded border border-gray-700/50"
+                >
+                  <span
+                    className={`font-bold flex items-center gap-2 ${
+                      p.id === user.uid ? "text-red-400" : "text-gray-300"
+                    }`}
+                  >
+                    <User
+                      size={14}
+                      className={
+                        p.id === user.uid ? "text-red-400" : "text-gray-500"
+                      }
+                    />
+                    {p.name}
+                    {p.id === gameState.hostId && (
+                      <Crown size={14} className="text-yellow-500" />
+                    )}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-green-500 text-xs flex items-center gap-1">
+                      <CheckCircle size={12} /> Ready
+                    </span>
+                    {isHost && p.id !== user.uid && (
+                      <button
+                        onClick={() => kickPlayer(p.id)}
+                        className="p-1 hover:bg-red-900/50 rounded text-red-400"
+                        title="Kick Player"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+              {gameState.players.length < 2 && (
+                <div className="text-center text-gray-500 italic text-sm py-2">
+                  Waiting for more agents...
+                </div>
+              )}
+            </div>
           </div>
 
           {isHost && (
-            <div className="bg-gray-800 rounded-xl p-4 md:p-6 mb-6 border border-gray-700">
+            <div className="bg-black/30 rounded-lg p-3 mb-6 border border-gray-700">
               <div className="flex justify-between items-center mb-4">
-                <h3 className="text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                <h3 className="text-red-300 font-bold mb-2 uppercase text-xs tracking-wider flex items-center gap-2">
                   <Settings size={16} /> Deck Config
                 </h3>
                 {playerCount > 4 && (
@@ -1392,7 +1827,7 @@ export default function PiratesGame() {
                         updateDeckConfig(guardCount - 1, merchantCount)
                       }
                       disabled={guardCount <= 4}
-                      className="w-8 h-8 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-30"
+                      className="w-8 h-8 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-30 text-white"
                     >
                       -
                     </button>
@@ -1401,7 +1836,7 @@ export default function PiratesGame() {
                         updateDeckConfig(guardCount + 1, merchantCount)
                       }
                       disabled={guardCount >= 6}
-                      className="w-8 h-8 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-30"
+                      className="w-8 h-8 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-30 text-white"
                     >
                       +
                     </button>
@@ -1417,7 +1852,7 @@ export default function PiratesGame() {
                         updateDeckConfig(guardCount, merchantCount - 1)
                       }
                       disabled={merchantCount <= 0}
-                      className="w-8 h-8 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-30"
+                      className="w-8 h-8 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-30 text-white"
                     >
                       -
                     </button>
@@ -1426,7 +1861,7 @@ export default function PiratesGame() {
                         updateDeckConfig(guardCount, merchantCount + 1)
                       }
                       disabled={merchantCount >= 2}
-                      className="w-8 h-8 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-30"
+                      className="w-8 h-8 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-30 text-white"
                     >
                       +
                     </button>
@@ -1440,73 +1875,112 @@ export default function PiratesGame() {
             <button
               onClick={() => startRound()}
               disabled={gameState.players.length < 2}
-              className={`w-full py-4 rounded-xl font-bold text-xl shadow-lg ${
-                gameState.players.length < 2
-                  ? "bg-gray-700 cursor-not-allowed"
-                  : "bg-green-600 hover:bg-green-500"
+              className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transition-all flex items-center justify-center gap-2 ${
+                gameState.players.length >= 2
+                  ? "bg-green-700 hover:bg-green-600 text-white shadow-green-900/20"
+                  : "bg-gray-800 cursor-not-allowed text-gray-500"
               }`}
             >
-              Set Sail (Start Game)
+              {gameState.players.length < 2
+                ? "Awaiting Agents..."
+                : "Commence Operation"}
             </button>
           ) : (
-            <div className="text-center text-gray-500 animate-pulse">
-              Waiting for Captain to start...
+            <div className="text-center text-red-400/60 animate-pulse font-serif italic">
+              Waiting for Host command...
             </div>
           )}
         </div>
+
+        <PiratesLogo />
       </div>
     );
   }
 
   if (view === "game" && gameState) {
     const isMerchantActive = gameState.merchantState && isMyTurn;
+    // Determine if the current user is host to allow lobby return from modal
+    const isHost = gameState.hostId === user.uid;
 
     return (
-      <div className="min-h-screen bg-gray-900 text-white flex flex-col relative overflow-hidden">
+      <div className="min-h-screen bg-gray-950 text-white flex flex-col relative overflow-hidden font-sans">
         <FloatingBackground />
 
-        {/* Global Info Modal (Replaces Alerts) */}
-        {infoModal && (
+        {/* Global Info Modal (Replaces Alerts) - Uses Queue System */}
+        {activeModal && (
           <InfoModal
-            title={infoModal.title}
-            text={infoModal.text}
-            type={infoModal.type}
-            onClose={() => setInfoModal(null)}
+            title={activeModal.title}
+            text={activeModal.text}
+            type={activeModal.type}
+            card={activeModal.card}
+            compareCard={activeModal.compareCard}
+            labels={activeModal.labels}
+            onClose={() => setActiveModal(null)}
           />
         )}
 
-        <div className="bg-gray-800 p-2 md:p-4 flex justify-between items-center z-50 shadow-md">
-          <div className="font-bold text-yellow-500 flex items-center gap-2 text-sm md:text-base">
-            <Ship size={18} /> Room: {roomId}
-            <span className="text-gray-400 text-xs md:text-sm ml-2">
-              Rnd {gameState.roundCount}
+        {/* Leave Confirmation Modal */}
+        {showLeaveConfirm && (
+          <LeaveConfirmModal
+            onCancel={() => setShowLeaveConfirm(false)}
+            onConfirmLeave={leaveRoom}
+            onConfirmLobby={() => {
+              resetToLobby();
+              setShowLeaveConfirm(false);
+            }}
+            isHost={isHost}
+            inGame={true} // Game View
+          />
+        )}
+
+        {/* Added Guide Modal */}
+        {showGuide && <GameGuideModal onClose={() => setShowGuide(false)} />}
+
+        {/* Top Bar */}
+        <div className="h-14 bg-gray-900/80 border-b border-gray-800 flex items-center justify-between px-4 z-50 backdrop-blur-md sticky top-0">
+          <div className="flex items-center gap-2">
+            <span className="font-serif text-red-500 font-bold tracking-wider hidden md:block">
+              PIRATES
+            </span>
+            <span className="text-xs text-gray-500 bg-black/50 px-2 py-1 rounded">
+              Room {gameState.roomId}
             </span>
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => setShowLogs(true)}
-              className="p-2 hover:bg-gray-700 rounded"
+              onClick={() => setShowGuide(true)}
+              className="p-2 hover:bg-gray-800 rounded text-gray-400"
+              title="Guide"
             >
-              <Info size={20} />
+              <BookOpen size={18} />
             </button>
             <button
-              onClick={leaveRoom}
-              className="p-2 hover:bg-gray-700 rounded"
+              onClick={() => setShowLogs(true)}
+              className="p-2 hover:bg-gray-800 rounded text-gray-400"
+              title="History"
             >
-              <LogOut size={20} />
+              <History size={18} />
+            </button>
+            <button
+              onClick={() => setShowLeaveConfirm(true)}
+              className="p-2 hover:bg-red-900/50 rounded text-red-400"
+              title="Leave"
+            >
+              <LogOut size={18} />
             </button>
           </div>
         </div>
 
-        <div className="flex-1 p-2 md:p-4 flex flex-col items-center justify-between relative z-10">
+        <div className="flex-1 p-2 md:p-4 flex flex-col items-center justify-between relative z-10 max-w-6xl mx-auto w-full">
+          {/* Deck Counter (Desktop) */}
           <div className="absolute top-1/2 left-4 -translate-y-1/2 flex flex-col gap-2 items-center text-gray-500 hidden md:flex">
-            <div className="w-16 h-24 bg-gray-800 border-2 border-gray-600 rounded-lg flex items-center justify-center">
+            <div className="w-16 h-24 bg-gray-900/90 border-2 border-gray-700 rounded-lg flex items-center justify-center">
               <span className="font-bold text-xl">{gameState.deck.length}</span>
             </div>
             <span className="text-xs uppercase">Deck</span>
           </div>
 
-          {/* Mobile Deck Counter (Top Center) */}
+          {/* Deck Counter (Mobile) */}
           <div className="md:hidden bg-gray-800/80 px-3 py-1 rounded-full border border-gray-700 text-xs text-gray-400 mb-2">
             Deck:{" "}
             <span className="text-white font-bold">
@@ -1514,8 +1988,8 @@ export default function PiratesGame() {
             </span>
           </div>
 
-          {/* Opponents Area - INCREASED WIDTH */}
-          <div className="flex gap-2 md:gap-4 justify-center flex-wrap w-full max-w-5xl">
+          {/* Opponents Area */}
+          <div className="flex gap-2 md:gap-4 justify-center flex-wrap w-full">
             {gameState.players.map((p, i) => {
               if (p.id === user.uid) return null;
               const isActive = gameState.turnIndex === i;
@@ -1527,10 +2001,10 @@ export default function PiratesGame() {
                 <div key={p.id} className="flex flex-col items-center">
                   <div
                     className={`
-                    relative bg-gray-800 p-2 md:p-3 rounded-lg md:rounded-xl border-2 w-28 md:w-32 transition-all cursor-pointer
+                    relative bg-gray-900/90 p-2 md:p-3 rounded-lg md:rounded-xl border-2 w-36 md:w-48 transition-all cursor-pointer
                     ${
                       isActive
-                        ? "border-yellow-500 shadow-yellow-500/20 shadow-lg scale-105"
+                        ? "border-red-500 shadow-red-500/20 shadow-lg scale-105"
                         : "border-gray-700"
                     }
                     ${p.eliminated ? "opacity-50 grayscale" : ""}
@@ -1555,7 +2029,11 @@ export default function PiratesGame() {
                     }
                   >
                     <div className="flex justify-between items-start mb-1 md:mb-2">
-                      <span className="font-bold truncate text-xs md:text-sm w-full">
+                      <span
+                        className={`font-bold truncate text-xs md:text-sm w-full ${
+                          isActive ? "text-red-300" : "text-gray-300"
+                        }`}
+                      >
                         {p.name}
                       </span>
                     </div>
@@ -1586,14 +2064,26 @@ export default function PiratesGame() {
                       )}
                     </div>
                     {isActive && (
-                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-yellow-500 text-black text-[8px] md:text-[10px] font-bold px-1.5 md:px-2 rounded-full whitespace-nowrap">
-                        TURN
+                      <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[8px] md:text-[10px] font-bold px-1.5 md:px-2 rounded-full whitespace-nowrap">
+                        PLAYING
                       </div>
                     )}
 
                     {isSelectable && (
                       <div className="absolute inset-0 bg-orange-500/20 rounded-lg md:rounded-xl flex items-center justify-center font-bold text-[10px] md:text-sm text-orange-300 animate-pulse">
                         TARGET
+                      </div>
+                    )}
+
+                    {/* NEW BADGES */}
+                    {isCookProtected && (
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-green-500 text-black text-[8px] md:text-[10px] font-bold px-1.5 md:px-2 rounded-full whitespace-nowrap z-20 shadow-lg">
+                        IMMUNE
+                      </div>
+                    )}
+                    {isThiefActive && (
+                      <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-red-600 text-white text-[8px] md:text-[10px] font-bold px-1.5 md:px-2 rounded-full whitespace-nowrap z-20 shadow-lg">
+                        THIEF
                       </div>
                     )}
                   </div>
@@ -1624,7 +2114,7 @@ export default function PiratesGame() {
 
           {/* My Player Area */}
           <div
-            className={`w-full max-w-2xl bg-gray-800/90 p-3 md:p-6 rounded-t-2xl md:rounded-t-3xl border-t border-gray-600 backdrop-blur-md transition-colors ${
+            className={`w-full max-w-2xl bg-gray-900/95 p-3 md:p-6 rounded-t-2xl md:rounded-t-3xl border-t border-red-900/50 backdrop-blur-md transition-colors ${
               me?.eliminated ? "grayscale opacity-75" : ""
             }`}
           >
@@ -1645,7 +2135,7 @@ export default function PiratesGame() {
                  `}
                 >
                   <User className="text-gray-400 w-4 h-4 md:w-5 md:h-5" />
-                  <span className="font-bold text-sm md:text-lg max-w-[80px] md:max-w-none truncate">
+                  <span className="font-bold text-sm md:text-lg max-w-[80px] md:max-w-none truncate text-gray-300">
                     {me.name}
                   </span>
                   {me.immune && (
@@ -1667,23 +2157,22 @@ export default function PiratesGame() {
               </div>
 
               {/* My Played Cards */}
-              <div className="flex flex-col items-end gap-1">
+              <div className="flex flex-col items-end gap-1 max-w-[160px] md:max-w-xs">
                 {isMyTurn && !me.eliminated && !isMerchantActive && (
-                  <div className="text-green-400 font-bold animate-pulse uppercase tracking-widest text-xs md:text-sm mb-1">
-                    Your Turn
+                  <div className="text-green-400 font-bold animate-pulse uppercase tracking-widest text-xs md:text-sm mb-1 bg-green-900/20 px-2 py-0.5 rounded border border-green-500/50">
+                    PLAYING
                   </div>
                 )}
-                <div className="flex gap-0.5 items-center bg-gray-900/50 p-1 md:p-2 rounded-lg border border-gray-700">
-                  <span className="text-[8px] md:text-[10px] text-gray-500 uppercase mr-1 hidden md:inline">
+                <div className="flex gap-0.5 items-center bg-gray-900/50 p-1 md:p-2 rounded-lg border border-gray-700 w-full overflow-x-auto">
+                  <span className="text-[8px] md:text-[10px] text-gray-500 uppercase mr-1 hidden md:inline shrink-0">
                     History
                   </span>
                   {me.playedCards &&
-                    me.playedCards.slice(-4).map(
-                      (
-                        c,
-                        idx // Limit history on mobile
-                      ) => <CardDisplay key={idx} type={c} tiny />
-                    )}
+                    me.playedCards.map((c, idx) => (
+                      <div key={idx} className="shrink-0">
+                        <CardDisplay type={c} tiny />
+                      </div>
+                    ))}
                 </div>
               </div>
             </div>
@@ -1828,66 +2317,80 @@ export default function PiratesGame() {
           </div>
         )}
 
-        {/* Game Over Modal */}
-        {gameState.status === "finished" && (
-          <div className="fixed inset-0 bg-black/95 z-[100] flex flex-col items-center justify-center p-4 text-center">
-            <Trophy size={48} className="text-yellow-400 mb-4 animate-bounce" />
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
-              Game Over!
-            </h1>
-            <div className="text-xl md:text-2xl text-gray-300 mb-8">
-              {gameState.players.find((p) => p.id === gameState.winnerId)?.name}{" "}
-              wins the treasure!
-            </div>
+        {/* Game Over Modal - Only shows if Queue is Empty */}
+        {gameState.status === "finished" &&
+          !activeModal &&
+          modalQueue.length === 0 && (
+            <div className="fixed inset-0 bg-black/95 z-[100] flex flex-col items-center justify-center p-4 text-center">
+              <Trophy
+                size={48}
+                className="text-yellow-400 mb-4 animate-bounce"
+              />
+              <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+                Game Over!
+              </h1>
+              <div className="text-xl md:text-2xl text-gray-300 mb-8">
+                {
+                  gameState.players.find((p) => p.id === gameState.winnerId)
+                    ?.name
+                }{" "}
+                wins the treasure!
+              </div>
 
-            {gameState.hostId === user.uid ? (
-              <div className="flex flex-col items-center gap-2 w-full max-w-xs">
-                {!allReady && (
-                  <div className="text-red-400 text-xs md:text-sm animate-pulse mb-2 flex items-center gap-2 justify-center">
-                    <AlertTriangle size={16} /> Waiting for crew...
-                  </div>
-                )}
-                <button
-                  onClick={resetToLobby}
-                  disabled={!allReady}
-                  className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-xl 
+              {gameState.hostId === user.uid ? (
+                <div className="flex flex-col items-center gap-2 w-full max-w-xs">
+                  {!allReady && (
+                    <div className="text-red-400 text-xs md:text-sm animate-pulse mb-2 flex items-center gap-2 justify-center">
+                      <AlertTriangle size={16} /> Waiting for crew...
+                    </div>
+                  )}
+                  <button
+                    onClick={resetToLobby}
+                    disabled={!allReady}
+                    className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-xl 
                         ${
                           allReady
                             ? "bg-green-600 hover:bg-green-500 shadow-green-900/20"
                             : "bg-gray-700 cursor-not-allowed text-gray-400"
                         }
                       `}
+                  >
+                    <RotateCcw /> Return to Lobby
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={setPlayerReady}
+                  disabled={
+                    gameState.players.find((p) => p.id === user.uid)
+                      ?.readyForNext
+                  }
+                  className={`w-full max-w-xs py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${
+                    gameState.players.find((p) => p.id === user.uid)
+                      ?.readyForNext
+                      ? "bg-gray-700 text-green-400 border border-green-500 cursor-default"
+                      : "bg-blue-600 hover:bg-blue-500 text-white"
+                  }`}
                 >
-                  <RotateCcw /> Return to Lobby
+                  {gameState.players.find((p) => p.id === user.uid)
+                    ?.readyForNext ? (
+                    <>
+                      <CheckCircle size={24} /> Waiting for Host...
+                    </>
+                  ) : (
+                    "Ready for Next Game"
+                  )}
                 </button>
-              </div>
-            ) : (
-              <button
-                onClick={setPlayerReady}
-                disabled={
-                  gameState.players.find((p) => p.id === user.uid)?.readyForNext
-                }
-                className={`w-full max-w-xs py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-all ${
-                  gameState.players.find((p) => p.id === user.uid)?.readyForNext
-                    ? "bg-gray-700 text-green-400 border border-green-500 cursor-default"
-                    : "bg-blue-600 hover:bg-blue-500 text-white"
-                }`}
-              >
-                {gameState.players.find((p) => p.id === user.uid)
-                  ?.readyForNext ? (
-                  <>
-                    <CheckCircle size={24} /> Waiting for Host...
-                  </>
-                ) : (
-                  "Ready for Next Game"
-                )}
-              </button>
-            )}
-          </div>
-        )}
+              )}
+            </div>
+          )}
+
+        {/* ADDED: Pirates Game Footer */}
+        <PiratesLogo />
       </div>
     );
   }
 
   return null;
 }
+//final done
