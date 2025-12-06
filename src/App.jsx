@@ -48,12 +48,19 @@ import {
 } from "lucide-react";
 
 // --- Firebase Config & Init ---
-const firebaseConfig = JSON.parse(__firebase_config);
+const firebaseConfig = {
+  apiKey: "AIzaSyBjIjK53vVJW1y5RaqEFGSFp0ECVDBEe1o",
+  authDomain: "game-hub-ff8aa.firebaseapp.com",
+  projectId: "game-hub-ff8aa",
+  storageBucket: "game-hub-ff8aa.firebasestorage.app",
+  messagingSenderId: "586559578902",
+  appId: "1:586559578902:web:4899548c3fd4da8c6aa637"
+};
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const APP_ID = typeof __app_id !== "undefined" ? __app_id : "pirates-game-v1";
+const APP_ID = typeof __app_id !== "undefined" ? __app_id : "pirates-game";
 
 // --- Game Constants ---
 const CARDS = {
