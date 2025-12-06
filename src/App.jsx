@@ -44,6 +44,7 @@ import {
   History,
   ArrowRight,
   Home,
+  Zap,
 } from "lucide-react";
 
 // --- Firebase Config & Init ---
@@ -172,7 +173,42 @@ const shuffle = (array) => {
 
 // --- Sub-Components ---
 
-// UPDATED: Much subtler red gradient (mostly dark gray/black with hint of red)
+// NEW: Central Feedback Overlay
+const FeedbackOverlay = ({ type, message, subtext, icon: Icon }) => (
+  <div className="fixed inset-0 z-[160] flex items-center justify-center pointer-events-none">
+    <div
+      className={`
+      flex flex-col items-center justify-center p-8 md:p-12 rounded-3xl border-4 shadow-[0_0_50px_rgba(0,0,0,0.8)] 
+      transform transition-all animate-in fade-in zoom-in slide-in-from-bottom-10 duration-300
+      backdrop-blur-md
+      ${
+        type === "success"
+          ? "bg-green-900/90 border-green-500 text-green-100"
+          : ""
+      }
+      ${type === "failure" ? "bg-red-900/90 border-red-500 text-red-100" : ""}
+      ${
+        type === "neutral" ? "bg-blue-900/90 border-blue-500 text-blue-100" : ""
+      }
+    `}
+    >
+      {Icon && (
+        <div className="mb-4 p-4 bg-black/30 rounded-full border-2 border-white/20">
+          <Icon size={64} className="animate-bounce" />
+        </div>
+      )}
+      <h2 className="text-3xl md:text-5xl font-black uppercase tracking-widest text-center drop-shadow-lg mb-2">
+        {message}
+      </h2>
+      {subtext && (
+        <p className="text-lg md:text-xl font-bold opacity-90 tracking-wide text-center">
+          {subtext}
+        </p>
+      )}
+    </div>
+  </div>
+);
+
 const FloatingBackground = () => (
   <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
     <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-gray-900 via-gray-950 to-black" />
@@ -187,7 +223,6 @@ const FloatingBackground = () => (
   </div>
 );
 
-// Pirates Game Footer
 const PiratesLogo = () => (
   <div className="flex items-center justify-center gap-1 opacity-40 mt-auto pb-2 pt-2 relative z-10">
     <Ship size={12} className="text-red-500" />
@@ -197,7 +232,6 @@ const PiratesLogo = () => (
   </div>
 );
 
-// UPDATED: Leave Modal logic
 const LeaveConfirmModal = ({
   onConfirmLeave,
   onConfirmLobby,
@@ -220,8 +254,6 @@ const LeaveConfirmModal = ({
         >
           Stay (Cancel)
         </button>
-
-        {/* Lobby Button - Only visible in GAME view and only for HOST */}
         {inGame && isHost && (
           <button
             onClick={onConfirmLobby}
@@ -230,7 +262,6 @@ const LeaveConfirmModal = ({
             <Home size={18} /> Return Crew to Lobby
           </button>
         )}
-
         <button
           onClick={onConfirmLeave}
           className="bg-red-600 hover:bg-red-500 text-white py-3 rounded font-bold transition-colors flex items-center justify-center gap-2"
@@ -242,7 +273,6 @@ const LeaveConfirmModal = ({
   </div>
 );
 
-// Updated InfoModal to support displaying Cards
 const InfoModal = ({
   title,
   text,
@@ -270,7 +300,6 @@ const InfoModal = ({
         <h3 className="text-2xl font-bold text-white">{title}</h3>
         <p className="text-gray-300 text-lg">{text}</p>
 
-        {/* Display Card if provided */}
         {(card || compareCard) && (
           <div className="flex gap-4 justify-center items-center my-2">
             {card && (
@@ -337,7 +366,6 @@ const GameGuideModal = ({ onClose }) => (
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-10 text-gray-300 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
-        {/* Section 1: Objective */}
         <div className="bg-gradient-to-r from-red-900/30 to-orange-900/30 p-4 md:p-6 rounded-2xl border border-red-700/30">
           <h3 className="text-xl md:text-2xl font-bold text-white mb-3 flex items-center gap-3">
             <Trophy className="text-yellow-400 fill-current" size={24} /> The
@@ -359,7 +387,6 @@ const GameGuideModal = ({ onClose }) => (
           </p>
         </div>
 
-        {/* Section 2: The Crew (Cards) */}
         <div>
           <h3 className="text-xl md:text-2xl font-bold text-white mb-6 flex items-center gap-3">
             <User className="text-red-400" size={24} /> The Crew (Cards)
@@ -398,13 +425,11 @@ const GameGuideModal = ({ onClose }) => (
           </div>
         </div>
 
-        {/* Section 3: How It Works */}
         <div>
           <h3 className="text-xl md:text-2xl font-bold text-white mb-6 flex items-center gap-3">
             <Compass className="text-orange-400" size={24} /> How It Works
           </h3>
           <div className="space-y-6 relative pl-4 border-l-2 border-gray-700 ml-4">
-            {/* Step 1 */}
             <div className="relative">
               <div className="absolute -left-[25px] top-0 bg-gray-800 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold border-2 border-gray-600 shadow-lg">
                 1
@@ -418,7 +443,6 @@ const GameGuideModal = ({ onClose }) => (
                 </p>
               </div>
             </div>
-            {/* Step 2 */}
             <div className="relative">
               <div className="absolute -left-[25px] top-0 bg-gray-800 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold border-2 border-gray-600 shadow-lg">
                 2
@@ -465,7 +489,6 @@ const CardDisplay = ({ type, onClick, disabled, highlight, small, tiny }) => {
     );
   }
 
-  // Responsive classes for Card
   const sizeClasses = small
     ? "w-12 h-16 md:w-16 md:h-24 p-0.5 md:p-1"
     : "w-24 h-36 md:w-32 md:h-48 p-2 md:p-3";
@@ -565,9 +588,13 @@ export default function PiratesGame() {
   const [guardModalTarget, setGuardModalTarget] = useState(null);
   const [guardPendingGuess, setGuardPendingGuess] = useState(null);
 
-  // Popup Queue State (Replaces simple infoModal)
+  // Popup Queue State
   const [modalQueue, setModalQueue] = useState([]);
   const [activeModal, setActiveModal] = useState(null);
+
+  // UPDATED: Visual Feedback State (Object instead of String)
+  // { type: 'success'|'failure'|'neutral', message: string, subtext: string, icon: Component }
+  const [feedbackOverlay, setFeedbackOverlay] = useState(null);
 
   // Track last processed action to avoid duplicate popups
   const lastProcessedActionId = useRef(null);
@@ -627,6 +654,12 @@ export default function PiratesGame() {
     }
   }, [activeModal, modalQueue]);
 
+  // UPDATED: Trigger Feedback Function
+  const triggerFeedback = (type, message, subtext = "", Icon = null) => {
+    setFeedbackOverlay({ type, message, subtext, icon: Icon });
+    setTimeout(() => setFeedbackOverlay(null), 2000); // Show for 2 seconds
+  };
+
   // Listener for Opponent Action Notifications AND Round End
   useEffect(() => {
     if (!gameState || !user) return;
@@ -637,6 +670,41 @@ export default function PiratesGame() {
       if (action.id !== lastProcessedActionId.current) {
         if (action.targetId === user.uid) {
           lastProcessedActionId.current = action.id;
+
+          // --- VISUAL FEEDBACK FOR VICTIM ---
+          if (action.type === "CANNONEER") {
+            triggerFeedback("failure", "UNDER ATTACK", "Card Destroyed!", Bomb);
+          } else if (
+            action.type === "GUARD" &&
+            action.message.includes("CORRECT")
+          ) {
+            triggerFeedback(
+              "failure",
+              "ELIMINATED",
+              "Guard Caught You!",
+              Skull
+            );
+          } else if (
+            action.type === "GUARD" &&
+            action.message.includes("WRONG")
+          ) {
+            triggerFeedback(
+              "neutral",
+              "SAFE",
+              "Guard Guessed Wrong",
+              CheckCircle
+            );
+          } else if (action.type === "SWORDSMAN") {
+            if (action.message.includes("You Died")) {
+              triggerFeedback("failure", "DEFEAT", "Lost Sword Fight", Skull);
+            } else if (action.message.includes("You Won")) {
+              triggerFeedback("success", "VICTORY", "Won Sword Fight", Trophy);
+            } else {
+              triggerFeedback("neutral", "TIED", "Both Survived", Sword);
+            }
+          }
+          // ---------------------------------
+
           setModalQueue((prev) => [
             ...prev,
             {
@@ -677,12 +745,10 @@ export default function PiratesGame() {
     }
   }, [gameState, user]);
 
-  // --- Helper to show modal instead of alert ---
   const showAlert = (title, text, type = "error", card = null) => {
     setModalQueue((prev) => [...prev, { title, text, type, card }]);
   };
 
-  // --- Actions ---
   const createRoom = async () => {
     if (!playerName) return setError("Name required");
     setLoading(true);
@@ -713,7 +779,7 @@ export default function PiratesGame() {
       thiefActive: null,
       pendingAction: null,
       lastAction: null,
-      lastRoundResult: null, // New field for round end
+      lastRoundResult: null,
     };
     await setDoc(
       doc(db, "artifacts", APP_ID, "public", "data", "rooms", newId),
@@ -795,20 +861,16 @@ export default function PiratesGame() {
         const isHost = data.hostId === user.uid;
 
         if (isHost) {
-          // If Host leaves (from lobby), destroy room
           if (data.status === "lobby") {
             await deleteDoc(roomRef);
           } else {
-            // If in Game, end game for everyone
             await handleGameAbandon(roomRef, data);
           }
         } else {
-          // If Guest leaves
           if (data.status === "lobby") {
             const newPlayers = data.players.filter((p) => p.id !== user.uid);
             await updateDoc(roomRef, { players: newPlayers });
           } else {
-            // In Game, handle abandon
             await handleGameAbandon(roomRef, data);
           }
         }
@@ -823,23 +885,17 @@ export default function PiratesGame() {
   };
 
   const handleGameAbandon = async (roomRef, data) => {
-    // If game is active, end it and declare winners
     const remainingPlayers = data.players.filter((p) => p.id !== user.uid);
     let winnerId = null;
 
-    // If only one remains, or host leaves, game effectively ends.
-    // For simplicity, if anyone leaves mid-game, we trigger 'finished' state
-    // so others see the modal.
     if (remainingPlayers.length > 0) {
-      // Pick the first remaining player as 'winner' or show 'Game Abandoned' logic
-      // Here we just set the first remaining as winner to show modal
       winnerId = remainingPlayers[0].id;
     }
 
     await updateDoc(roomRef, {
       status: "finished",
       winnerId: winnerId,
-      players: data.players.filter((p) => p.id !== user.uid), // Remove leaver
+      players: data.players.filter((p) => p.id !== user.uid),
       logs: arrayUnion({
         id: Date.now().toString(),
         text: `${
@@ -915,9 +971,9 @@ export default function PiratesGame() {
         turnIndex: startIdx,
         thiefActive: null,
         lastAction: null,
-        lastRoundResult: null, // Reset for new round
+        lastRoundResult: null,
         logs: arrayUnion({
-          id: Date.now() + Math.random().toString(), // ADDED UNIQUE ID
+          id: Date.now() + Math.random().toString(),
           text: `--- Round ${
             state.roundCount || gameState.roundCount
           } Started ---`,
@@ -965,6 +1021,73 @@ export default function PiratesGame() {
     );
   };
 
+  // --- RESTART GAME LOGIC (Host Only) ---
+  const restartGame = async () => {
+    if (!gameState || gameState.hostId !== user.uid) return;
+
+    // 1. Reset all players to clean slate (0 coins)
+    const players = gameState.players.map((p) => ({
+      ...p,
+      hand: [],
+      playedCards: [],
+      coins: 0,
+      eliminated: false,
+      immune: false,
+      readyForNext: false,
+    }));
+
+    // 2. Generate and Shuffle Deck
+    let config = gameState.deckConfig || { guards: 6, merchants: 2 };
+    if (players.length > 4) config = { guards: 6, merchants: 2 };
+
+    const deck = [];
+    Object.keys(CARDS).forEach((key) => {
+      let count = CARDS[key].defaultCount;
+      if (key === "GUARD") count = config.guards ?? 6;
+      if (key === "MERCHANT") count = config.merchants ?? 2;
+      for (let i = 0; i < count; i++) deck.push(key);
+    });
+
+    const shuffledDeck = shuffle(deck);
+    const burntCard = shuffledDeck.pop();
+
+    // 3. Deal Initial Cards
+    const playersWithCards = players.map((p) => ({
+      ...p,
+      hand: [shuffledDeck.pop()],
+    }));
+
+    // 4. Select Start Player and Deal Second Card
+    const startIdx = Math.floor(Math.random() * playersWithCards.length);
+    playersWithCards[startIdx].hand.push(shuffledDeck.pop());
+
+    // 5. Update Firestore
+    await updateDoc(
+      doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
+      {
+        status: "playing",
+        deck: shuffledDeck,
+        burntCard,
+        players: playersWithCards,
+        discardPile: [],
+        turnIndex: startIdx,
+        thiefActive: null,
+        lastAction: null,
+        lastRoundResult: null,
+        roundCount: 1,
+        winnerId: null,
+        // CHANGED: We pass a new array to overwrite/clear old logs
+        logs: [
+          {
+            id: Date.now().toString(),
+            text: "--- NEW GAME STARTED ---",
+            type: "neutral",
+          },
+        ],
+      }
+    );
+  };
+
   const nextTurn = async (
     currentState,
     logs = [],
@@ -976,18 +1099,14 @@ export default function PiratesGame() {
     let thiefActive = currentState.thiefActive;
 
     const activePlayers = players.filter((p) => !p.eliminated);
-
-    // FIX: ADD UNIQUE IDs TO LOGS TO PREVENT FIRESTORE DEDUPLICATION
     const uniqueLogs = logs.map((log) => ({
       ...log,
       id: log.id || Date.now() + Math.random().toString(),
     }));
 
-    // Prepare update object
     let updateData = {
       players,
       deck,
-      // Logs are added last to ensure all logic (like thief survival) contributes
     };
 
     if (actionNotification) {
@@ -1009,8 +1128,8 @@ export default function PiratesGame() {
         winnerName: winner.name,
         round: currentState.roundCount || gameState.roundCount,
       };
-      updateData.lastRoundResult = roundResult;
 
+      // --- SKIP LAST ROUND RESULT IF GAME IS WON ---
       if (winner.coins >= 10) {
         await updateDoc(
           doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
@@ -1018,18 +1137,21 @@ export default function PiratesGame() {
             ...updateData,
             status: "finished",
             winnerId: winner.id,
-            logs: arrayUnion(...uniqueLogs), // Add uniqueLogs here
+            logs: arrayUnion(...uniqueLogs),
           }
         );
         return;
       }
+      // ---------------------------------------------
+
+      updateData.lastRoundResult = roundResult;
 
       await updateDoc(
         doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
         {
           ...updateData,
           roundCount: increment(1),
-          logs: arrayUnion(...uniqueLogs), // Add uniqueLogs here
+          logs: arrayUnion(...uniqueLogs),
         }
       );
       setTimeout(
@@ -1039,7 +1161,7 @@ export default function PiratesGame() {
             players,
             roundCount: (currentState.roundCount || gameState.roundCount) + 1,
           }),
-        3500 // Increased delay so users can read the popup
+        3500
       );
       return;
     }
@@ -1074,8 +1196,8 @@ export default function PiratesGame() {
         winnerName: winnerNames,
         round: currentState.roundCount || gameState.roundCount,
       };
-      updateData.lastRoundResult = roundResult;
 
+      // --- SKIP LAST ROUND RESULT IF GAME IS WON ---
       if (players.some((p) => p.coins >= 10)) {
         await updateDoc(
           doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
@@ -1083,18 +1205,21 @@ export default function PiratesGame() {
             ...updateData,
             status: "finished",
             winnerId: players.find((p) => p.coins >= 10).id,
-            logs: arrayUnion(...uniqueLogs), // Add uniqueLogs here
+            logs: arrayUnion(...uniqueLogs),
           }
         );
         return;
       }
+      // ---------------------------------------------
+
+      updateData.lastRoundResult = roundResult;
 
       await updateDoc(
         doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
         {
           ...updateData,
           roundCount: increment(1),
-          logs: arrayUnion(...uniqueLogs), // Add uniqueLogs here
+          logs: arrayUnion(...uniqueLogs),
         }
       );
       setTimeout(
@@ -1115,6 +1240,11 @@ export default function PiratesGame() {
     }
 
     if (thiefActive && thiefActive.playerId === players[nextIdx].id) {
+      // Feedback for Thief Player
+      if (players[nextIdx].id === user.uid) {
+        triggerFeedback("success", "+1 COIN", "Survived as Thief", Coins);
+      }
+
       players[nextIdx].coins += 1;
       uniqueLogs.push({
         id: Date.now() + Math.random().toString(),
@@ -1122,26 +1252,43 @@ export default function PiratesGame() {
         type: "success",
       });
       thiefActive = null;
+
+      // --- THIEF INSTANT WIN FIX ---
+      if (players[nextIdx].coins >= 10) {
+        uniqueLogs.push({
+          id: Date.now() + Math.random().toString(),
+          text: `🏆 ${players[nextIdx].name} collected 10 coins via Thief and WINS THE GAME!`,
+          type: "success",
+        });
+
+        await updateDoc(
+          doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
+          {
+            players,
+            status: "finished",
+            winnerId: players[nextIdx].id,
+            logs: arrayUnion(...uniqueLogs),
+            // EXPLICITLY OMITTING 'lastRoundResult' prevents the Round End modal
+          }
+        );
+        return; // Stop execution
+      }
+      // -----------------------------
     }
 
     players[nextIdx].immune = false;
 
     if (deck.length > 0) {
       players[nextIdx].hand.push(deck.pop());
-    } else {
-      // UPDATED: Removed burntCard usage here.
-      // If deck is empty, the round should have ended via the check above.
-      // We do not draw the separated card for normal turns.
     }
 
-    // Final update with next turn info
     updateData = {
       ...updateData,
       deck,
       turnIndex: nextIdx,
       thiefActive,
       players,
-      logs: arrayUnion(...uniqueLogs), // Add uniqueLogs here to catch all pushes
+      logs: arrayUnion(...uniqueLogs),
     };
 
     await updateDoc(
@@ -1156,14 +1303,11 @@ export default function PiratesGame() {
       showAlert("Targeting Error", "You cannot target yourself!", "error");
       return;
     }
-
-    // Guard play triggers modal
     if (selectedCard === "GUARD") {
       setGuardModalTarget(targetId);
-      setGuardPendingGuess(null); // Reset pending guess
+      setGuardPendingGuess(null);
       return;
     }
-
     handlePlayCard(selectedCard, targetId);
   };
 
@@ -1194,7 +1338,7 @@ export default function PiratesGame() {
     let deck = [...gameState.deck];
     let logs = [];
     let thiefActive = gameState.thiefActive;
-    let actionNotification = null; // Prepare notification object
+    let actionNotification = null;
 
     const hand = me.hand;
     const hasCaptain = hand.includes("CAPTAIN");
@@ -1253,6 +1397,7 @@ export default function PiratesGame() {
       if (!target.immune) {
         const targetCard = target.hand[0];
         if (targetCard === finalGuess) {
+          triggerFeedback("success", "KILLED", "Guard Guess Correct!", Skull);
           eliminate(
             explicitTargetId,
             `Guard caught a ${CARDS[finalGuess].name}`
@@ -1267,6 +1412,7 @@ export default function PiratesGame() {
             labels: ["You Had", "They Guessed"],
           };
         } else {
+          triggerFeedback("failure", "MISSED", "Guard Guess Wrong", Shield);
           logs.push({
             text: `❌ Guard guess wrong. ${target.name} does not have ${CARDS[finalGuess].name}.`,
             type: "neutral",
@@ -1282,6 +1428,7 @@ export default function PiratesGame() {
           };
         }
       } else {
+        triggerFeedback("failure", "IMMUNE", "Target Protected", Shield);
         logs.push({
           text: `🛡️ ${target.name} is immune to the Guard!`,
           type: "warning",
@@ -1300,12 +1447,11 @@ export default function PiratesGame() {
           text: `👁️ ${me.name} plays Spy and looks at ${target.name}'s hand.`,
           type: "neutral",
         });
-        // Render Card in the Spy Report
         showAlert(
           "Spy Report",
           `${target.name} is holding: ${CARDS[target.hand[0]].name}`,
           "spy",
-          target.hand[0] // Pass card to modal
+          target.hand[0]
         );
         actionNotification = {
           id: Date.now(),
@@ -1314,6 +1460,7 @@ export default function PiratesGame() {
           message: `${me.name} used a Spy to look at your hand.`,
         };
       } else {
+        triggerFeedback("failure", "IMMUNE", "Target Protected", Shield);
         logs.push({
           text: `🛡️ ${me.name} tried to Spy, but ${target.name} is immune!`,
           type: "warning",
@@ -1328,42 +1475,29 @@ export default function PiratesGame() {
     } else if (cardType === "SWORDSMAN") {
       const target = players.find((p) => p.id === explicitTargetId);
       if (!target.immune) {
-        // Fix: Capture card keys and values BEFORE elimination modification
         const myCardKey = players[myIdx].hand[0];
         const targetCardKey = target.hand[0];
-
         const myVal = CARDS[myCardKey].val;
         const targetVal = CARDS[targetCardKey].val;
 
-        // Obfuscated log
         logs.push({
           text: `⚔️ ${me.name} challenged ${target.name}.`,
           type: "neutral",
         });
 
         if (myVal < targetVal) {
+          triggerFeedback("failure", "DEFEAT", "You Died (Lower Card)", Skull);
           eliminate(user.uid, `Lost Sword Fight (Lower Card)`);
           logs.push({ text: `... ${me.name} was defeated!`, type: "danger" });
-          // Notification to Winner (Target)
           actionNotification = {
             id: Date.now(),
             targetId: explicitTargetId,
             type: "SWORDSMAN",
             message: `${me.name} challenged you! Your ${CARDS[targetCardKey].name} beat their ${CARDS[myCardKey].name}. You Won!`,
-            cardToShow: myCardKey,
-            compareCard: targetCardKey,
-            labels: ["Your Hand", "Attacker"], // SWAPPED: Player's hand is left, Opponent's/Guessed is right?
-            // Wait, "Your Hand" usually refers to the viewer (Target).
-            // In "cardToShow", we are showing "myCardKey" (Attacker).
-            // In "compareCard", we are showing "targetCardKey" (Target/Viewer).
-            // Let's swap the cards to match the labels properly.
-            // Target sees: Left = Their Hand (TargetCard), Right = Attacker Hand (MyCard)
+            cardToShow: targetCardKey,
+            compareCard: myCardKey,
+            labels: ["Your Hand", "Attacker"],
           };
-          // Correcting the card order for the notification object to match "Your Hand" (Left) vs "Guessed/Attacker" (Right)
-          actionNotification.cardToShow = targetCardKey;
-          actionNotification.compareCard = myCardKey;
-
-          // Also show the attacker (current user) a modal result locally since they might die
           showAlert(
             "Sword Fight Result",
             `You challenged ${target.name}. Their ${CARDS[targetCardKey].name} beat your ${CARDS[myCardKey].name}. You Died.`,
@@ -1371,19 +1505,24 @@ export default function PiratesGame() {
             targetCardKey
           );
         } else if (targetVal < myVal) {
+          triggerFeedback(
+            "success",
+            "VICTORY",
+            "Target Died (Lower Card)",
+            Trophy
+          );
           eliminate(explicitTargetId, `Lost Sword Fight (Lower Card)`);
           logs.push({
             text: `... ${target.name} was defeated!`,
             type: "danger",
           });
-          // Notification to Loser (Target)
           actionNotification = {
             id: Date.now(),
             targetId: explicitTargetId,
             type: "SWORDSMAN",
             message: `${me.name} challenged you! Your ${CARDS[targetCardKey].name} lost to their ${CARDS[myCardKey].name}. You Died.`,
-            cardToShow: targetCardKey, // Target Hand (Left)
-            compareCard: myCardKey, // Attacker Hand (Right)
+            cardToShow: targetCardKey,
+            compareCard: myCardKey,
             labels: ["Your Hand", "Attacker"],
           };
           showAlert(
@@ -1393,6 +1532,7 @@ export default function PiratesGame() {
             targetCardKey
           );
         } else {
+          triggerFeedback("neutral", "TIED", "Both Survived", Sword);
           logs.push({
             text: `⚔️ Sword Fight Tie! Both survive.`,
             type: "neutral",
@@ -1402,8 +1542,8 @@ export default function PiratesGame() {
             targetId: explicitTargetId,
             type: "SWORDSMAN",
             message: `${me.name} challenged you! Tie (${CARDS[targetCardKey].name}). Both survive.`,
-            cardToShow: targetCardKey, // Target Hand
-            compareCard: myCardKey, // Attacker Hand
+            cardToShow: targetCardKey,
+            compareCard: myCardKey,
             labels: ["Your Hand", "Attacker"],
           };
           showAlert(
@@ -1414,6 +1554,7 @@ export default function PiratesGame() {
           );
         }
       } else {
+        triggerFeedback("failure", "IMMUNE", "Target Protected", Shield);
         logs.push({
           text: `🛡️ ${target.name} is immune to Sword Fight!`,
           type: "warning",
@@ -1437,6 +1578,7 @@ export default function PiratesGame() {
 
       if (!target.immune) {
         if (target.hand[0] === "PIRATE") {
+          triggerFeedback("failure", "BACKFIRE", "Hit Pirate (You Died)", Bomb);
           logs.push({
             text: `💣 ${me.name} fires Cannon at ${target.name}... It's a Pirate!`,
             type: "danger",
@@ -1449,9 +1591,8 @@ export default function PiratesGame() {
             message: `${me.name} fired a Cannon at you. You had a Pirate and were eliminated!`,
           };
         } else {
+          triggerFeedback("success", "DESTROYED", "Card Removed", Bomb);
           const oldCard = target.hand.pop();
-
-          // Add destroyed card to opponent's history
           if (!players[targetIdx].playedCards)
             players[targetIdx].playedCards = [];
           players[targetIdx].playedCards.push(oldCard);
@@ -1483,6 +1624,7 @@ export default function PiratesGame() {
           };
         }
       } else {
+        triggerFeedback("failure", "IMMUNE", "Target Protected", Shield);
         logs.push({
           text: `🛡️ ${target.name} is immune to Cannoneer!`,
           type: "warning",
@@ -1505,7 +1647,6 @@ export default function PiratesGame() {
       const pool = [...players[myIdx].hand, ...drawn];
       players[myIdx].hand = [];
 
-      // Fix MERCHANT Logs: Map to unique IDs before update
       const uniqueLogs = logs.map((l) => ({
         ...l,
         id: Date.now() + Math.random().toString(),
@@ -1517,7 +1658,7 @@ export default function PiratesGame() {
           players,
           deck,
           thiefActive: thiefActive || null,
-          logs: arrayUnion(...uniqueLogs), // Correctly adding unique logs
+          logs: arrayUnion(...uniqueLogs),
           discardPile: arrayUnion(cardType),
           merchantState: { pool, originalDeckCount: deck.length },
         }
@@ -1541,8 +1682,8 @@ export default function PiratesGame() {
           targetId: explicitTargetId,
           type: "SAILOR",
           message: `${me.name} swapped hands with you.`,
-          cardToShow: myCard, // Incoming card (New)
-          compareCard: theirCard, // Outgoing card (Taken)
+          cardToShow: myCard,
+          compareCard: theirCard,
           labels: ["Taken Card", "Current Hand"],
         };
       } else {
@@ -1563,6 +1704,7 @@ export default function PiratesGame() {
         type: "neutral",
       });
     } else if (cardType === "PIRATE") {
+      triggerFeedback("failure", "SUICIDE", "You Played Pirate!", Skull);
       eliminate(user.uid, "Played Pirate (Suicide)");
     }
 
@@ -1584,7 +1726,7 @@ export default function PiratesGame() {
         thiefActive: thiefActive || null,
         burntCard: gameState.burntCard,
         deckConfig: gameState.deckConfig,
-        roundCount: gameState.roundCount, // Fix: Passed roundCount explicitly
+        roundCount: gameState.roundCount,
       },
       logs,
       actionNotification
@@ -1617,7 +1759,7 @@ export default function PiratesGame() {
         thiefActive: gameState.thiefActive,
         burntCard: gameState.burntCard,
         deckConfig: gameState.deckConfig,
-        roundCount: gameState.roundCount, // Fix: Passed roundCount explicitly
+        roundCount: gameState.roundCount,
       },
       [
         {
@@ -1649,9 +1791,7 @@ export default function PiratesGame() {
     return (
       <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-4 relative overflow-hidden font-sans">
         <FloatingBackground />
-
         {showGuide && <GameGuideModal onClose={() => setShowGuide(false)} />}
-
         <div className="z-10 text-center mb-10 animate-in fade-in zoom-in duration-700">
           <Ship
             size={64}
@@ -1664,7 +1804,6 @@ export default function PiratesGame() {
             Adventure on the Sea
           </p>
         </div>
-
         <div className="bg-gray-900/80 backdrop-blur border border-red-500/30 p-8 rounded-2xl w-full max-w-md shadow-2xl z-10 animate-in slide-in-from-bottom-10 duration-700 delay-100">
           {error && (
             <div className="bg-red-900/50 text-red-200 p-2 mb-4 rounded text-center text-sm border border-red-800">
@@ -1684,7 +1823,6 @@ export default function PiratesGame() {
           >
             <Ship size={20} /> Create New Ship
           </button>
-
           <div className="flex flex-col sm:flex-row gap-2 mb-4">
             <input
               className="w-full sm:flex-1 bg-black/50 border border-gray-600 p-3 rounded text-white placeholder-gray-500 uppercase font-mono tracking-wider focus:border-red-500 outline-none"
@@ -1720,8 +1858,6 @@ export default function PiratesGame() {
     return (
       <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6 relative">
         <FloatingBackground />
-
-        {/* Leave Confirmation Modal */}
         {showLeaveConfirm && (
           <LeaveConfirmModal
             onCancel={() => setShowLeaveConfirm(false)}
@@ -1731,10 +1867,9 @@ export default function PiratesGame() {
               setShowLeaveConfirm(false);
             }}
             isHost={isHost}
-            inGame={false} // Lobby View
+            inGame={false}
           />
         )}
-
         <div className="z-10 w-full max-w-lg bg-gray-900/90 backdrop-blur p-8 rounded-2xl border border-red-900/50 shadow-2xl mb-4">
           <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
             <h2 className="text-2xl font-serif text-red-500">
@@ -1748,7 +1883,6 @@ export default function PiratesGame() {
               <LogOut size={16} />
             </button>
           </div>
-
           <div className="bg-black/20 rounded-xl p-4 mb-8 border border-gray-800">
             <h3 className="text-gray-500 text-xs uppercase tracking-wider mb-4 flex justify-between">
               <span>Crew ({gameState.players.length}/8)</span>
@@ -1798,7 +1932,6 @@ export default function PiratesGame() {
               )}
             </div>
           </div>
-
           {isHost && (
             <div className="bg-black/30 rounded-lg p-3 mb-6 border border-gray-700">
               <div className="flex justify-between items-center mb-4">
@@ -1811,7 +1944,6 @@ export default function PiratesGame() {
                   </span>
                 )}
               </div>
-
               <div
                 className={`grid grid-cols-1 md:grid-cols-2 gap-4 ${
                   playerCount > 4 ? "opacity-50 pointer-events-none" : ""
@@ -1870,7 +2002,6 @@ export default function PiratesGame() {
               </div>
             </div>
           )}
-
           {isHost ? (
             <button
               onClick={() => startRound()}
@@ -1891,7 +2022,6 @@ export default function PiratesGame() {
             </div>
           )}
         </div>
-
         <PiratesLogo />
       </div>
     );
@@ -1899,14 +2029,22 @@ export default function PiratesGame() {
 
   if (view === "game" && gameState) {
     const isMerchantActive = gameState.merchantState && isMyTurn;
-    // Determine if the current user is host to allow lobby return from modal
     const isHost = gameState.hostId === user.uid;
 
     return (
       <div className="min-h-screen bg-gray-950 text-white flex flex-col relative overflow-hidden font-sans">
         <FloatingBackground />
 
-        {/* Global Info Modal (Replaces Alerts) - Uses Queue System */}
+        {/* FEEDBACK OVERLAY */}
+        {feedbackOverlay && (
+          <FeedbackOverlay
+            type={feedbackOverlay.type}
+            message={feedbackOverlay.message}
+            subtext={feedbackOverlay.subtext}
+            icon={feedbackOverlay.icon}
+          />
+        )}
+
         {activeModal && (
           <InfoModal
             title={activeModal.title}
@@ -1918,8 +2056,6 @@ export default function PiratesGame() {
             onClose={() => setActiveModal(null)}
           />
         )}
-
-        {/* Leave Confirmation Modal */}
         {showLeaveConfirm && (
           <LeaveConfirmModal
             onCancel={() => setShowLeaveConfirm(false)}
@@ -1929,14 +2065,10 @@ export default function PiratesGame() {
               setShowLeaveConfirm(false);
             }}
             isHost={isHost}
-            inGame={true} // Game View
+            inGame={true}
           />
         )}
-
-        {/* Added Guide Modal */}
         {showGuide && <GameGuideModal onClose={() => setShowGuide(false)} />}
-
-        {/* Top Bar */}
         <div className="h-14 bg-gray-900/80 border-b border-gray-800 flex items-center justify-between px-4 z-50 backdrop-blur-md sticky top-0">
           <div className="flex items-center gap-2">
             <span className="font-serif text-red-500 font-bold tracking-wider hidden md:block">
@@ -1970,25 +2102,19 @@ export default function PiratesGame() {
             </button>
           </div>
         </div>
-
         <div className="flex-1 p-2 md:p-4 flex flex-col items-center justify-between relative z-10 max-w-6xl mx-auto w-full">
-          {/* Deck Counter (Desktop) */}
           <div className="absolute top-1/2 left-4 -translate-y-1/2 flex flex-col gap-2 items-center text-gray-500 hidden md:flex">
             <div className="w-16 h-24 bg-gray-900/90 border-2 border-gray-700 rounded-lg flex items-center justify-center">
               <span className="font-bold text-xl">{gameState.deck.length}</span>
             </div>
             <span className="text-xs uppercase">Deck</span>
           </div>
-
-          {/* Deck Counter (Mobile) */}
           <div className="md:hidden bg-gray-800/80 px-3 py-1 rounded-full border border-gray-700 text-xs text-gray-400 mb-2">
             Deck:{" "}
             <span className="text-white font-bold">
               {gameState.deck.length}
             </span>
           </div>
-
-          {/* Opponents Area */}
           <div className="flex gap-2 md:gap-4 justify-center flex-wrap w-full">
             {gameState.players.map((p, i) => {
               if (p.id === user.uid) return null;
@@ -2037,7 +2163,6 @@ export default function PiratesGame() {
                         {p.name}
                       </span>
                     </div>
-                    {/* Status Icons Row */}
                     <div className="absolute top-1 right-1 flex flex-col gap-0.5">
                       {p.immune && (
                         <Shield size={10} className="text-green-400" />
@@ -2046,7 +2171,6 @@ export default function PiratesGame() {
                         <Footprints size={10} className="text-red-400" />
                       )}
                     </div>
-
                     <div className="flex gap-0.5 md:gap-1 justify-center mb-1 md:mb-2">
                       {p.hand.map((_, idx) => (
                         <div
@@ -2068,14 +2192,11 @@ export default function PiratesGame() {
                         PLAYING
                       </div>
                     )}
-
                     {isSelectable && (
                       <div className="absolute inset-0 bg-orange-500/20 rounded-lg md:rounded-xl flex items-center justify-center font-bold text-[10px] md:text-sm text-orange-300 animate-pulse">
                         TARGET
                       </div>
                     )}
-
-                    {/* NEW BADGES */}
                     {isCookProtected && (
                       <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-green-500 text-black text-[8px] md:text-[10px] font-bold px-1.5 md:px-2 rounded-full whitespace-nowrap z-20 shadow-lg">
                         IMMUNE
@@ -2097,7 +2218,6 @@ export default function PiratesGame() {
               );
             })}
           </div>
-
           <div className="pointer-events-none z-0 my-2 flex flex-col items-center space-y-2 opacity-80 w-full px-4">
             {gameState.logs
               .slice(-2)
@@ -2111,8 +2231,6 @@ export default function PiratesGame() {
                 </div>
               ))}
           </div>
-
-          {/* My Player Area */}
           <div
             className={`w-full max-w-2xl bg-gray-900/95 p-3 md:p-6 rounded-t-2xl md:rounded-t-3xl border-t border-red-900/50 backdrop-blur-md transition-colors ${
               me?.eliminated ? "grayscale opacity-75" : ""
@@ -2155,8 +2273,6 @@ export default function PiratesGame() {
                   </span>
                 </div>
               </div>
-
-              {/* My Played Cards */}
               <div className="flex flex-col items-end gap-1 max-w-[160px] md:max-w-xs">
                 {isMyTurn && !me.eliminated && !isMerchantActive && (
                   <div className="text-green-400 font-bold animate-pulse uppercase tracking-widest text-xs md:text-sm mb-1 bg-green-900/20 px-2 py-0.5 rounded border border-green-500/50">
@@ -2176,7 +2292,6 @@ export default function PiratesGame() {
                 </div>
               </div>
             </div>
-
             {me.eliminated ? (
               <div className="text-center py-4 md:py-8 text-red-500 font-bold text-xl md:text-2xl uppercase tracking-widest border-2 border-red-900 bg-red-900/10 rounded-xl">
                 <Skull className="inline-block mb-1 md:mb-2 w-8 h-8 md:w-12 md:h-12" />
@@ -2185,7 +2300,6 @@ export default function PiratesGame() {
               </div>
             ) : (
               <>
-                {/* Card Selection Area */}
                 <div className="flex justify-center gap-2 md:gap-4 mb-2">
                   {isMerchantActive
                     ? gameState.merchantState.pool.map((c, i) => (
@@ -2197,7 +2311,6 @@ export default function PiratesGame() {
                             type={c}
                             onClick={() => handleMerchantConfirm(c)}
                             highlight={true}
-                            // REMOVED small={true} for full detail in Merchant view
                           />
                           <span className="text-xs text-green-400 font-bold">
                             Keep
@@ -2244,12 +2357,9 @@ export default function PiratesGame() {
             )}
           </div>
         </div>
-
         {showLogs && (
           <LogViewer logs={gameState.logs} onClose={() => setShowLogs(false)} />
         )}
-
-        {/* --- GUARD GUESS MODAL --- */}
         {guardModalTarget && (
           <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
             <div className="bg-gray-800 border-2 border-blue-500 rounded-xl p-4 md:p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in">
@@ -2257,7 +2367,6 @@ export default function PiratesGame() {
                 <Shield className="text-blue-400" />
                 Guess a Card
               </h3>
-
               <div className="grid grid-cols-2 gap-2 mb-4">
                 {Object.keys(CARDS)
                   .filter((k) => {
@@ -2284,8 +2393,6 @@ export default function PiratesGame() {
                     </button>
                   ))}
               </div>
-
-              {/* Confirm / Cancel Button Logic */}
               <button
                 onClick={() => {
                   if (guardPendingGuess) {
@@ -2316,8 +2423,6 @@ export default function PiratesGame() {
             </div>
           </div>
         )}
-
-        {/* Game Over Modal - Only shows if Queue is Empty */}
         {gameState.status === "finished" &&
           !activeModal &&
           modalQueue.length === 0 && (
@@ -2338,24 +2443,38 @@ export default function PiratesGame() {
               </div>
 
               {gameState.hostId === user.uid ? (
-                <div className="flex flex-col items-center gap-2 w-full max-w-xs">
+                <div className="flex flex-col items-center gap-3 w-full max-w-xs">
                   {!allReady && (
-                    <div className="text-red-400 text-xs md:text-sm animate-pulse mb-2 flex items-center gap-2 justify-center">
+                    <div className="text-red-400 text-xs md:text-sm animate-pulse mb-1 flex items-center gap-2 justify-center">
                       <AlertTriangle size={16} /> Waiting for crew...
                     </div>
                   )}
+                  {/* RESTART BUTTON */}
                   <button
-                    onClick={resetToLobby}
+                    onClick={restartGame}
                     disabled={!allReady}
-                    className={`w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-xl 
+                    className={`w-full py-3 rounded-xl font-bold text-lg flex items-center justify-center gap-2 shadow-xl transition-all
                         ${
                           allReady
-                            ? "bg-green-600 hover:bg-green-500 shadow-green-900/20"
+                            ? "bg-blue-600 hover:bg-blue-500 shadow-blue-900/20 text-white"
                             : "bg-gray-700 cursor-not-allowed text-gray-400"
                         }
                       `}
                   >
-                    <RotateCcw /> Return to Lobby
+                    <RotateCcw size={20} /> Restart Game
+                  </button>
+                  <button
+                    onClick={resetToLobby}
+                    disabled={!allReady}
+                    className={`w-full py-3 rounded-xl font-bold text-lg flex items-center justify-center gap-2 border-2 transition-all
+                        ${
+                          allReady
+                            ? "border-green-600 text-green-500 hover:bg-green-600/10"
+                            : "border-gray-700 text-gray-500 cursor-not-allowed"
+                        }
+                      `}
+                  >
+                    <Home size={20} /> Return to Lobby
                   </button>
                 </div>
               ) : (
@@ -2384,8 +2503,6 @@ export default function PiratesGame() {
               )}
             </div>
           )}
-
-        {/* ADDED: Pirates Game Footer */}
         <PiratesLogo />
       </div>
     );
@@ -2393,4 +2510,3 @@ export default function PiratesGame() {
 
   return null;
 }
-//final done
