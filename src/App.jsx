@@ -60,7 +60,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const APP_ID = typeof __app_id !== "undefined" ? __app_id : "pirates-game-v1";
+const APP_ID = typeof __app_id !== "undefined" ? __app_id : "pirates-game";
 
 // --- Game Constants ---
 const CARDS = {
@@ -1593,7 +1593,8 @@ export default function PiratesGame() {
 
       if (!target.immune) {
         if (target.hand[0] === "PIRATE") {
-          triggerFeedback("failure", "BACKFIRE", "Hit Pirate (You Died)", Bomb);
+          // FIX: Changed from failure/BACKFIRE to success/KILLED
+          triggerFeedback("success", "KILLED", "Pirate Eliminated!", Skull);
           logs.push({
             text: `💣 ${me.name} fires Cannon at ${target.name}... It's a Pirate!`,
             type: "danger",
@@ -1683,7 +1684,7 @@ export default function PiratesGame() {
       } else {
         triggerFeedback("failure", "IMMUNE", "Target Protected", Shield);
         logs.push({
-          text: `🛡️ ${target.name} is immune to Cannoneer!`,
+          text: `🛡 ${target.name} is immune to Cannoneer!`,
           type: "warning",
         });
         actionNotification = {
