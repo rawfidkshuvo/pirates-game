@@ -48,19 +48,12 @@ import {
 } from "lucide-react";
 
 // --- Firebase Config & Init ---
-const firebaseConfig = {
-  apiKey: "AIzaSyBjIjK53vVJW1y5RaqEFGSFp0ECVDBEe1o",
-  authDomain: "game-hub-ff8aa.firebaseapp.com",
-  projectId: "game-hub-ff8aa",
-  storageBucket: "game-hub-ff8aa.firebasestorage.app",
-  messagingSenderId: "586559578902",
-  appId: "1:586559578902:web:4899548c3fd4da8c6aa637"
-};
+const firebaseConfig = JSON.parse(__firebase_config);
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const APP_ID = typeof __app_id !== "undefined" ? __app_id : "pirates-game";
+const APP_ID = typeof __app_id !== "undefined" ? __app_id : "pirates-game-v1";
 
 // --- Game Constants ---
 const CARDS = {
@@ -186,9 +179,13 @@ const FeedbackOverlay = ({ type, message, subtext, icon: Icon }) => (
           ? "bg-green-900/90 border-green-500 text-green-100"
           : ""
       }
-      ${type === "failure" ? "bg-red-900/90 border-red-500 text-red-100" : ""}
       ${
-        type === "neutral" ? "bg-blue-900/90 border-blue-500 text-blue-100" : ""
+        type === "failure" ? "bg-red-900/90 border-red-500 text-red-100" : ""
+      }
+      ${
+        type === "neutral"
+          ? "bg-blue-900/90 border-blue-500 text-blue-100"
+          : ""
       }
     `}
     >
@@ -673,7 +670,12 @@ export default function PiratesGame() {
 
           // --- VISUAL FEEDBACK FOR VICTIM ---
           if (action.type === "CANNONEER") {
-            triggerFeedback("failure", "UNDER ATTACK", "Card Destroyed!", Bomb);
+            // NEW: Captain Defended Feedback
+            if (action.message.includes("Reflected")) {
+              triggerFeedback("success", "DEFENDED", "Captain Killed Attacker!", Crown);
+            } else {
+              triggerFeedback("failure", "UNDER ATTACK", "Card Destroyed!", Bomb);
+            }
           } else if (
             action.type === "GUARD" &&
             action.message.includes("CORRECT")
@@ -698,7 +700,12 @@ export default function PiratesGame() {
             if (action.message.includes("You Died")) {
               triggerFeedback("failure", "DEFEAT", "Lost Sword Fight", Skull);
             } else if (action.message.includes("You Won")) {
-              triggerFeedback("success", "VICTORY", "Won Sword Fight", Trophy);
+              triggerFeedback(
+                "success",
+                "VICTORY",
+                "Won Sword Fight",
+                Trophy
+              );
             } else {
               triggerFeedback("neutral", "TIED", "Both Survived", Sword);
             }
@@ -1590,6 +1597,42 @@ export default function PiratesGame() {
             type: "CANNONEER",
             message: `${me.name} fired a Cannon at you. You had a Pirate and were eliminated!`,
           };
+        } else if (target.hand[0] === "CAPTAIN") {
+          // --- NEW LOGIC: CAPTAIN DEFLECTS CANNONEER ---
+          triggerFeedback("failure", "BACKFIRE", "Hit Captain (You Died)", Crown);
+          logs.push({
+            text: `💣 ${me.name} fires Cannon at ${target.name}... It's a Captain! ${me.name} blows themselves up!`,
+            type: "danger",
+          });
+          eliminate(user.uid, "Cannoneer hit a Captain");
+
+          // Target swaps card (Captain reflected, gets new card)
+          const oldCard = target.hand.pop();
+          if (!players[targetIdx].playedCards) players[targetIdx].playedCards = [];
+          players[targetIdx].playedCards.push(oldCard);
+
+          let newCard;
+          if (deck.length > 0) {
+            newCard = deck.pop();
+          } else {
+            newCard = gameState.burntCard;
+            logs.push({
+              text: "Deck empty! Recycled Burnt Card for Captain holder.",
+              type: "warning",
+            });
+          }
+          players[targetIdx].hand.push(newCard);
+
+          actionNotification = {
+            id: Date.now(),
+            targetId: explicitTargetId,
+            type: "CANNONEER",
+            message: `${me.name} fired a Cannon at you. Your Captain Reflected the attack! They died. You drew a new card.`,
+            cardToShow: oldCard,
+            compareCard: newCard,
+            labels: ["Reflected", "New Card"],
+          };
+          // ---------------------------------------------
         } else {
           triggerFeedback("success", "DESTROYED", "Card Removed", Bomb);
           const oldCard = target.hand.pop();
