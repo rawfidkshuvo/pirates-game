@@ -592,8 +592,7 @@ export default function PiratesGame() {
   const [modalQueue, setModalQueue] = useState([]);
   const [activeModal, setActiveModal] = useState(null);
 
-  // UPDATED: Visual Feedback State (Object instead of String)
-  // { type: 'success'|'failure'|'neutral', message: string, subtext: string, icon: Component }
+  // Visual Feedback State
   const [feedbackOverlay, setFeedbackOverlay] = useState(null);
 
   // Track last processed action to avoid duplicate popups
@@ -654,7 +653,7 @@ export default function PiratesGame() {
     }
   }, [activeModal, modalQueue]);
 
-  // UPDATED: Trigger Feedback Function
+  // Trigger Feedback Function
   const triggerFeedback = (type, message, subtext = "", Icon = null) => {
     setFeedbackOverlay({ type, message, subtext, icon: Icon });
     setTimeout(() => setFeedbackOverlay(null), 2000); // Show for 2 seconds
@@ -673,13 +672,20 @@ export default function PiratesGame() {
 
           // --- VISUAL FEEDBACK FOR VICTIM ---
           if (action.type === "CANNONEER") {
-            // NEW: Captain Defended Feedback
             if (action.message.includes("Reflected")) {
               triggerFeedback(
                 "success",
                 "DEFENDED",
                 "Captain Killed Attacker!",
                 Crown
+              );
+            } else if (action.message.includes("Pirate")) {
+              // FIX: Correct Feedback for Pirate Death
+              triggerFeedback(
+                "failure",
+                "ELIMINATED",
+                "Cannon Hit Pirate!",
+                Skull
               );
             } else {
               triggerFeedback(
@@ -1597,7 +1603,8 @@ export default function PiratesGame() {
           triggerFeedback("success", "KILLED", "Pirate Eliminated!", Skull);
           logs.push({
             text: `💣 ${me.name} fires Cannon at ${target.name}... It's a Pirate!`,
-            type: "danger",
+            // UPDATED: Changed log type to success so it looks green/positive for the attacker
+            type: "success",
           });
           eliminate(explicitTargetId, "Cannoneer hit a Pirate");
           actionNotification = {
