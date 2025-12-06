@@ -60,7 +60,7 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const APP_ID = typeof __app_id !== "undefined" ? __app_id : "pirates-game";
+const APP_ID = typeof __app_id !== "undefined" ? __app_id : "pirates-game-v1";
 
 // --- Game Constants ---
 const CARDS = {
@@ -680,7 +680,6 @@ export default function PiratesGame() {
                 Crown
               );
             } else if (action.message.includes("Pirate")) {
-              // FIX: Correct Feedback for Pirate Death
               triggerFeedback(
                 "failure",
                 "ELIMINATED",
@@ -1397,6 +1396,84 @@ export default function PiratesGame() {
       if (thiefActive && thiefActive.playerId === pid) thiefActive = null;
     };
 
+    // Helper to calculate winner if deck empty during play
+    const handleDeckEmptyEnd = async () => {
+      let maxVal = -1;
+      let winners = [];
+      const activePlayers = players.filter((p) => !p.eliminated);
+
+      activePlayers.forEach((p) => {
+        const val = CARDS[p.hand[0]].val;
+        if (val > maxVal) {
+          maxVal = val;
+          winners = [p];
+        } else if (val === maxVal) {
+          winners.push(p);
+        }
+      });
+
+      winners.forEach((w) => {
+        const idx = players.findIndex((p) => p.id === w.id);
+        players[idx].coins += 1;
+      });
+
+      const winnerNames = winners.map((w) => w.name).join(", ");
+
+      logs.push({
+        id: Date.now() + Math.random().toString(),
+        text: `🌊 Deck Empty! Winners: ${winnerNames} (Card Value: ${maxVal}).`,
+        type: "success",
+      });
+
+      const uniqueLogs = logs.map((l) => ({
+        ...l,
+        id: Date.now() + Math.random().toString(),
+      }));
+
+      const roundResult = {
+        id: Date.now(),
+        winnerName: winnerNames,
+        round: gameState.roundCount,
+      };
+
+      if (players.some((p) => p.coins >= 10)) {
+        await updateDoc(
+          doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
+          {
+            players,
+            deck,
+            status: "finished",
+            winnerId: players.find((p) => p.coins >= 10).id,
+            logs: arrayUnion(...uniqueLogs),
+            discardPile: arrayUnion(cardType), // Save played card
+            lastAction: actionNotification,
+          }
+        );
+      } else {
+        await updateDoc(
+          doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
+          {
+            players,
+            deck,
+            roundCount: increment(1),
+            logs: arrayUnion(...uniqueLogs),
+            discardPile: arrayUnion(cardType),
+            lastAction: actionNotification,
+            lastRoundResult: roundResult,
+          }
+        );
+        setTimeout(
+          () =>
+            startRound({
+              ...gameState,
+              players,
+              roundCount: gameState.roundCount + 1,
+            }),
+          3500
+        );
+      }
+    };
+
     if (cardType === "THIEF") {
       logs.push({
         text: `👣 ${me.name} plays Thief. (Gain coin if survived until next turn)`,
@@ -1599,11 +1676,10 @@ export default function PiratesGame() {
 
       if (!target.immune) {
         if (target.hand[0] === "PIRATE") {
-          // FIX: Changed from failure/BACKFIRE to success/KILLED
+          // Success Feedback for Attacker
           triggerFeedback("success", "KILLED", "Pirate Eliminated!", Skull);
           logs.push({
-            text: `💣 ${me.name} fires Cannon at ${target.name}... It's a Pirate!`,
-            // UPDATED: Changed log type to success so it looks green/positive for the attacker
+            text: `💣 ${me.name} fires Cannon at ${target.name}... It's a Pirate! Target eliminated.`,
             type: "success",
           });
           eliminate(explicitTargetId, "Cannoneer hit a Pirate");
@@ -1614,7 +1690,7 @@ export default function PiratesGame() {
             message: `${me.name} fired a Cannon at you. You had a Pirate and were eliminated!`,
           };
         } else if (target.hand[0] === "CAPTAIN") {
-          // --- NEW LOGIC: CAPTAIN DEFLECTS CANNONEER ---
+          // Captain Reflects
           triggerFeedback(
             "failure",
             "BACKFIRE",
@@ -1627,7 +1703,6 @@ export default function PiratesGame() {
           });
           eliminate(user.uid, "Cannoneer hit a Captain");
 
-          // Target swaps card (Captain reflected, gets new card)
           const oldCard = target.hand.pop();
           if (!players[targetIdx].playedCards)
             players[targetIdx].playedCards = [];
@@ -1654,8 +1729,16 @@ export default function PiratesGame() {
             compareCard: newCard,
             labels: ["Reflected", "New Card"],
           };
-          // ---------------------------------------------
+
+          // CHECK END GAME: If deck was empty (used burntCard), end game
+          if (deck.length === 0) {
+            setSelectedCard(null);
+            setSelectedGuess("");
+            await handleDeckEmptyEnd();
+            return;
+          }
         } else {
+          // Standard Hit
           triggerFeedback("success", "DESTROYED", "Card Removed", Bomb);
           const oldCard = target.hand.pop();
           if (!players[targetIdx].playedCards)
@@ -1687,6 +1770,14 @@ export default function PiratesGame() {
             compareCard: newCard,
             labels: ["Destroyed", "New Card"],
           };
+
+          // CHECK END GAME: If deck was empty (used burntCard), end game
+          if (deck.length === 0) {
+            setSelectedCard(null);
+            setSelectedGuess("");
+            await handleDeckEmptyEnd();
+            return;
+          }
         }
       } else {
         triggerFeedback("failure", "IMMUNE", "Target Protected", Shield);
