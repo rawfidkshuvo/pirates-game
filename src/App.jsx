@@ -45,6 +45,7 @@ import {
   ArrowRight,
   Home,
   Zap,
+  Hammer,
 } from "lucide-react";
 
 // --- Firebase Config & Init ---
@@ -60,7 +61,8 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-const APP_ID = typeof __app_id !== "undefined" ? __app_id : "pirates-game-v1";
+const APP_ID = typeof __app_id !== "undefined" ? __app_id : "pirates-game";
+const GAME_ID = "5";
 
 // --- Game Constants ---
 const CARDS = {
@@ -580,6 +582,7 @@ export default function PiratesGame() {
   const [error, setError] = useState("");
   const [showGuide, setShowGuide] = useState(false);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
+  const [isMaintenance, setIsMaintenance] = useState(false);
 
   // UI States
   const [showLogs, setShowLogs] = useState(false);
@@ -764,6 +767,43 @@ export default function PiratesGame() {
       }
     }
   }, [gameState, user]);
+
+  // ... existing auth useEffect ...
+
+  // --- ADD THIS EFFECT ---
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, "game_hub_settings", "config"), (doc) => {
+      if (doc.exists()) {
+        const data = doc.data();
+        if (data[GAME_ID]?.maintenance) {
+          setIsMaintenance(true);
+        } else {
+          setIsMaintenance(false);
+        }
+      }
+    });
+    return () => unsub();
+  }, []);
+
+  // --- ADD THIS BLOCK ---
+  if (isMaintenance) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center text-white p-4 text-center">
+        <div className="bg-orange-500/10 p-8 rounded-2xl border border-orange-500/30">
+          <Hammer
+            size={64}
+            className="text-orange-500 mx-auto mb-4 animate-bounce"
+          />
+          <h1 className="text-3xl font-bold mb-2">Under Maintenance</h1>
+          <p className="text-gray-400">
+            The ship is in dry dock for repairs. The Captain says no sailing today!
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // ... existing code: if (view === "menu") { ...
 
   const showAlert = (title, text, type = "error", card = null) => {
     setModalQueue((prev) => [...prev, { title, text, type, card }]);
