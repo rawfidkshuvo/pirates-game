@@ -617,6 +617,21 @@ export default function PiratesGame() {
     return () => unsubscribe();
   }, []);
 
+  // --- NEW: Session Restore Logic ---
+  useEffect(() => {
+    // Only attempt restore if logged in and currently in menu
+    if (user && view === "menu") {
+      const savedRoomId = localStorage.getItem("pirates_room_id");
+      const savedPlayerName = localStorage.getItem("pirates_player_name");
+
+      if (savedRoomId && savedPlayerName) {
+        setLoading(true);
+        setPlayerName(savedPlayerName);
+        setRoomId(savedRoomId); // Triggers the snapshot listener
+      }
+    }
+  }, [user, view]);
+
   useEffect(() => {
     if (!roomId || !user) return;
     const unsub = onSnapshot(
@@ -629,7 +644,10 @@ export default function PiratesGame() {
           if (!isInRoom) {
             setRoomId("");
             setView("menu");
-            setError("The Captain abandoned the ship! (Room Closed)");
+            setError("The Captain abandoned the ship! (You were disconnected)");
+            localStorage.removeItem("pirates_room_id");
+            localStorage.removeItem("pirates_player_name");
+            setLoading(false);
             return;
           }
 
@@ -639,10 +657,14 @@ export default function PiratesGame() {
           } else if (data.status === "lobby") {
             setView("lobby");
           }
+          setLoading(false);
         } else {
           setRoomId("");
           setView("menu");
-          setError("The Captain abandoned the ship! (Room Closed)");
+          setError("The ship has sunk! (Room Closed)");
+          localStorage.removeItem("pirates_room_id");
+          localStorage.removeItem("pirates_player_name");
+          setLoading(false);
         }
       }
     );
@@ -769,9 +791,6 @@ export default function PiratesGame() {
     }
   }, [gameState, user]);
 
-  // ... existing auth useEffect ...
-
-  // --- ADD THIS EFFECT ---
   useEffect(() => {
     const unsub = onSnapshot(doc(db, "game_hub_settings", "config"), (doc) => {
       if (doc.exists()) {
@@ -786,7 +805,6 @@ export default function PiratesGame() {
     return () => unsub();
   }, []);
 
-  // --- ADD THIS BLOCK ---
   if (isMaintenance) {
     return (
       <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center text-white p-4 text-center">
@@ -800,10 +818,7 @@ export default function PiratesGame() {
             The ship is in dry dock for repairs. The Captain says no sailing today!
           </p>
         </div>
-        {/* Add Spacing Between Boxes */}
         <div className="h-8"></div>
-
-        {/* Clickable Second Card */}
         <a href="https://rawfidkshuvo.github.io/gamehub/">
           <div className="flex items-center justify-center gap-3 mb-2">
             <div className="text-center pb-12 animate-pulse">
@@ -817,8 +832,6 @@ export default function PiratesGame() {
       </div>
     );
   }
-
-  // ... existing code: if (view === "menu") { ...
 
   const showAlert = (title, text, type = "error", card = null) => {
     setModalQueue((prev) => [...prev, { title, text, type, card }]);
@@ -860,6 +873,10 @@ export default function PiratesGame() {
       doc(db, "artifacts", APP_ID, "public", "data", "rooms", newId),
       initialData
     );
+    // SAVE SESSION
+    localStorage.setItem("pirates_room_id", newId);
+    localStorage.setItem("pirates_player_name", playerName);
+
     setRoomId(newId);
     setRoomCodeInput(newId);
     setView("lobby");
@@ -888,13 +905,17 @@ export default function PiratesGame() {
 
     const data = snap.data();
     if (data.status !== "lobby") {
-      setError("Game already started");
-      setLoading(false);
-      return;
+      // Allow reconnect if player exists
+      const existingPlayer = data.players.find((p) => p.id === user.uid);
+      if (!existingPlayer) {
+        setError("Game already started");
+        setLoading(false);
+        return;
+      }
     }
 
     if (data.players.find((p) => p.id === user.uid)) {
-      setRoomId(roomCodeInput);
+      // Just rejoining logic handled by setting RoomId and effect
     } else if (data.players.length < 8) {
       const newPlayers = [
         ...data.players,
@@ -910,10 +931,17 @@ export default function PiratesGame() {
         },
       ];
       await updateDoc(ref, { players: newPlayers });
-      setRoomId(roomCodeInput);
     } else {
       setError("Room full (Max 8)");
+      setLoading(false);
+      return;
     }
+
+    // SAVE SESSION
+    localStorage.setItem("pirates_room_id", roomCodeInput);
+    localStorage.setItem("pirates_player_name", playerName);
+
+    setRoomId(roomCodeInput);
     setLoading(false);
   };
 
@@ -953,6 +981,10 @@ export default function PiratesGame() {
     } catch (e) {
       console.error("Error leaving room:", e);
     }
+    // CLEAR SESSION
+    localStorage.removeItem("pirates_room_id");
+    localStorage.removeItem("pirates_player_name");
+
     setRoomId("");
     setView("menu");
     setGameState(null);
@@ -1241,16 +1273,24 @@ export default function PiratesGame() {
       return;
     }
 
-    if (deck.length === 0 && players[turnIndex].hand.length === 1) {
+    // --- LOGIC FIX: Handle Empty Deck Showdown ---
+    // If player has 1 card but deck is empty, they cannot draw.
+    // Trigger End of Round comparison.
+    // Note: If turn player just played Merchant, hand might be empty momentarily, but Merchant logic handles refilling/nextTurn.
+    // This check runs before drawing a new card for the next player.
+    if (deck.length === 0) {
+        // Find highest card among survivors
       let maxVal = -1;
       let winners = [];
       activePlayers.forEach((p) => {
-        const val = CARDS[p.hand[0]].val;
-        if (val > maxVal) {
-          maxVal = val;
-          winners = [p];
-        } else if (val === maxVal) {
-          winners.push(p);
+        if(p.hand.length > 0) { // Safety check
+            const val = CARDS[p.hand[0]].val;
+            if (val > maxVal) {
+              maxVal = val;
+              winners = [p];
+            } else if (val === maxVal) {
+              winners.push(p);
+            }
         }
       });
 
@@ -1272,7 +1312,6 @@ export default function PiratesGame() {
         round: currentState.roundCount || gameState.roundCount,
       };
 
-      // --- SKIP LAST ROUND RESULT IF GAME IS WON ---
       if (players.some((p) => p.coins >= 10)) {
         await updateDoc(
           doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
@@ -1285,7 +1324,6 @@ export default function PiratesGame() {
         );
         return;
       }
-      // ---------------------------------------------
 
       updateData.lastRoundResult = roundResult;
 
@@ -1451,7 +1489,7 @@ export default function PiratesGame() {
       if (thiefActive && thiefActive.playerId === pid) thiefActive = null;
     };
 
-    // Helper to calculate winner if deck empty during play
+    // Helper to calculate winner if deck empty during play (triggered by Cannoneer running out of cards)
     const handleDeckEmptyEnd = async () => {
       let maxVal = -1;
       let winners = [];
@@ -2376,10 +2414,16 @@ export default function PiratesGame() {
                     </div>
                     <div className="absolute top-1 right-1 flex flex-col gap-0.5">
                       {p.immune && (
-                        <Shield size={10} className="text-green-400" />
+                        <Shield
+                          size={10}
+                          className="text-green-400"
+                        />
                       )}
                       {isThiefActive && (
-                        <Footprints size={10} className="text-red-400" />
+                        <Footprints
+                          size={10}
+                          className="text-red-400"
+                        />
                       )}
                     </div>
                     <div className="flex gap-0.5 md:gap-1 justify-center mb-1 md:mb-2">
@@ -2461,7 +2505,7 @@ export default function PiratesGame() {
                         ? "ring-2 ring-red-500 shadow-lg shadow-red-500/20"
                         : ""
                     }
-                 `}
+                   `}
                 >
                   <User className="text-gray-400 w-4 h-4 md:w-5 md:h-5" />
                   <span className="font-bold text-sm md:text-lg max-w-[80px] md:max-w-none truncate text-gray-300">
@@ -2569,7 +2613,10 @@ export default function PiratesGame() {
           </div>
         </div>
         {showLogs && (
-          <LogViewer logs={gameState.logs} onClose={() => setShowLogs(false)} />
+          <LogViewer
+            logs={gameState.logs}
+            onClose={() => setShowLogs(false)}
+          />
         )}
         {guardModalTarget && (
           <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
