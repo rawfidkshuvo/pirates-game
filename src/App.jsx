@@ -2095,6 +2095,20 @@ export default function PiratesGame() {
             <BookOpen size={16} /> How to Play
           </button>
         </div>
+        <div className="absolute bottom-4 text-slate-600 text-xs text-center">
+          Inspired by Love Letter. A tribute game.
+          <br />
+          Developed by <strong>RAWFID K SHUVO</strong>. Visit{" "}
+          <a
+            href="https://rawfidkshuvo.github.io/gamehub/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-red-500 underline hover:text-red-600"
+          >
+            GAMEHUB
+          </a>{" "}
+          for more games.
+        </div>
       </div>
     );
   }
