@@ -50,7 +50,8 @@ import {
 } from "lucide-react";
 
 // --- Firebase Config & Init ---
-const firebaseConfig = {
+// Using environment config for compatibility with the preview environment
+const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
   apiKey: "AIzaSyBjIjK53vVJW1y5RaqEFGSFp0ECVDBEe1o",
   authDomain: "game-hub-ff8aa.firebaseapp.com",
   projectId: "game-hub-ff8aa",
@@ -58,6 +59,7 @@ const firebaseConfig = {
   messagingSenderId: "586559578902",
   appId: "1:586559578902:web:4899548c3fd4da8c6aa637",
 };
+
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
@@ -246,9 +248,10 @@ const LeaveConfirmModal = ({
     <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 max-w-sm w-full text-center shadow-2xl">
       <h3 className="text-xl font-bold text-white mb-2">Abandon Ship?</h3>
       <p className="text-gray-400 mb-6 text-sm">
-        {inGame
-          ? "Leaving now will end the game for everyone!"
-          : "Leaving the lobby will disconnect you."}
+        {isHost 
+          ? "Leaving will destroy the room for everyone!" 
+          : (inGame ? "Leaving now will end the game for you!" : "Leaving the lobby will disconnect you.")
+        }
       </p>
       <div className="flex flex-col gap-3">
         <button
@@ -269,7 +272,7 @@ const LeaveConfirmModal = ({
           onClick={onConfirmLeave}
           className="bg-red-600 hover:bg-red-500 text-white py-3 rounded font-bold transition-colors flex items-center justify-center gap-2"
         >
-          <LogOut size={18} /> Leave Game
+          <LogOut size={18} /> {isHost ? "Destroy Room" : "Leave Game"}
         </button>
       </div>
     </div>
@@ -964,12 +967,10 @@ export default function PiratesGame() {
         const isHost = data.hostId === user.uid;
 
         if (isHost) {
-          if (data.status === "lobby") {
-            await deleteDoc(roomRef);
-          } else {
-            await handleGameAbandon(roomRef, data);
-          }
+          // MODIFIED: Host deletes room immediately regardless of status
+          await deleteDoc(roomRef);
         } else {
+          // NON-HOST logic remains the same
           if (data.status === "lobby") {
             const newPlayers = data.players.filter((p) => p.id !== user.uid);
             await updateDoc(roomRef, { players: newPlayers });
