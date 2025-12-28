@@ -121,7 +121,7 @@ const CARDS = {
     icon: Bomb,
     color: "text-red-600",
     bg: "bg-red-950",
-    desc: "Force discard & redraw. Kills Pirates.",
+    desc: "Force discard & redraw. Kills Pirates. Gets killed if Captain.",
   },
   MERCHANT: {
     name: "Merchant",
@@ -148,7 +148,7 @@ const CARDS = {
     icon: Crown,
     color: "text-purple-400",
     bg: "bg-purple-900",
-    desc: "Must play if holding Cannoneer/Sailor.",
+    desc: "No action. Must play if holding Cannoneer/Sailor.",
   },
   PIRATE: {
     name: "Pirate",
