@@ -2360,7 +2360,7 @@ export default function PiratesGame() {
               onClick={() => setShowLogs(!showLogs)}
               className={`p-2 rounded-full ${
                 showLogs
-                  ? "bg-green-900 text-green-400"
+                  ? "bg-red-900 text-red-400"
                   : "text-gray-400 hover:bg-gray-800"
               }`}
             >
