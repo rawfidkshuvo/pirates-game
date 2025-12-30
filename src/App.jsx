@@ -51,14 +51,17 @@ import {
 
 // --- Firebase Config & Init ---
 // Using environment config for compatibility with the preview environment
-const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-  apiKey: "AIzaSyBjIjK53vVJW1y5RaqEFGSFp0ECVDBEe1o",
-  authDomain: "game-hub-ff8aa.firebaseapp.com",
-  projectId: "game-hub-ff8aa",
-  storageBucket: "game-hub-ff8aa.firebasestorage.app",
-  messagingSenderId: "586559578902",
-  appId: "1:586559578902:web:4899548c3fd4da8c6aa637",
-};
+const firebaseConfig =
+  typeof __firebase_config !== "undefined"
+    ? JSON.parse(__firebase_config)
+    : {
+        apiKey: "AIzaSyBjIjK53vVJW1y5RaqEFGSFp0ECVDBEe1o",
+        authDomain: "game-hub-ff8aa.firebaseapp.com",
+        projectId: "game-hub-ff8aa",
+        storageBucket: "game-hub-ff8aa.firebasestorage.app",
+        messagingSenderId: "586559578902",
+        appId: "1:586559578902:web:4899548c3fd4da8c6aa637",
+      };
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -248,10 +251,11 @@ const LeaveConfirmModal = ({
     <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 max-w-sm w-full text-center shadow-2xl">
       <h3 className="text-xl font-bold text-white mb-2">Abandon Ship?</h3>
       <p className="text-gray-400 mb-6 text-sm">
-        {isHost 
-          ? "Leaving will destroy the room for everyone!" 
-          : (inGame ? "Leaving now will end the game for you!" : "Leaving the lobby will disconnect you.")
-        }
+        {isHost
+          ? "Leaving will destroy the room for everyone!"
+          : inGame
+          ? "Leaving now will end the game for you!"
+          : "Leaving the lobby will disconnect you."}
       </p>
       <div className="flex flex-col gap-3">
         <button
@@ -546,7 +550,7 @@ const CardDisplay = ({ type, onClick, disabled, highlight, small, tiny }) => {
 };
 
 const LogViewer = ({ logs, onClose }) => (
-  <div className="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center p-0 md:p-4">
+  <div className="fixed inset-0 top-14 bg-black/90 z-[155] flex items-center justify-center p-0 md:p-4">
     <div className="bg-gray-800 w-full md:max-w-md h-full md:h-[70vh] rounded-none md:rounded-xl flex flex-col border-none md:border border-gray-700">
       <div className="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-800">
         <h3 className="text-white font-bold text-lg">Game Log</h3>
@@ -818,7 +822,8 @@ export default function PiratesGame() {
           />
           <h1 className="text-3xl font-bold mb-2">Under Maintenance</h1>
           <p className="text-gray-400">
-            The ship is in dry dock for repairs. The Captain says no sailing today!
+            The ship is in dry dock for repairs. The Captain says no sailing
+            today!
           </p>
         </div>
         <div className="h-8"></div>
@@ -1280,18 +1285,19 @@ export default function PiratesGame() {
     // Note: If turn player just played Merchant, hand might be empty momentarily, but Merchant logic handles refilling/nextTurn.
     // This check runs before drawing a new card for the next player.
     if (deck.length === 0) {
-        // Find highest card among survivors
+      // Find highest card among survivors
       let maxVal = -1;
       let winners = [];
       activePlayers.forEach((p) => {
-        if(p.hand.length > 0) { // Safety check
-            const val = CARDS[p.hand[0]].val;
-            if (val > maxVal) {
-              maxVal = val;
-              winners = [p];
-            } else if (val === maxVal) {
-              winners.push(p);
-            }
+        if (p.hand.length > 0) {
+          // Safety check
+          const val = CARDS[p.hand[0]].val;
+          if (val > maxVal) {
+            maxVal = val;
+            winners = [p];
+          } else if (val === maxVal) {
+            winners.push(p);
+          }
         }
       });
 
@@ -2333,7 +2339,7 @@ export default function PiratesGame() {
           />
         )}
         {showGuide && <GameGuideModal onClose={() => setShowGuide(false)} />}
-        <div className="h-14 bg-gray-900/80 border-b border-gray-800 flex items-center justify-between px-4 z-50 backdrop-blur-md sticky top-0">
+        <div className="h-14 bg-gray-900/80 border-b border-gray-800 flex items-center justify-between px-4 z-[160] backdrop-blur-md sticky top-0">
           <div className="flex items-center gap-2">
             <span className="font-serif text-red-500 font-bold tracking-wider hidden md:block">
               PIRATES
@@ -2429,16 +2435,10 @@ export default function PiratesGame() {
                     </div>
                     <div className="absolute top-1 right-1 flex flex-col gap-0.5">
                       {p.immune && (
-                        <Shield
-                          size={10}
-                          className="text-green-400"
-                        />
+                        <Shield size={10} className="text-green-400" />
                       )}
                       {isThiefActive && (
-                        <Footprints
-                          size={10}
-                          className="text-red-400"
-                        />
+                        <Footprints size={10} className="text-red-400" />
                       )}
                     </div>
                     <div className="flex gap-0.5 md:gap-1 justify-center mb-1 md:mb-2">
@@ -2628,10 +2628,7 @@ export default function PiratesGame() {
           </div>
         </div>
         {showLogs && (
-          <LogViewer
-            logs={gameState.logs}
-            onClose={() => setShowLogs(false)}
-          />
+          <LogViewer logs={gameState.logs} onClose={() => setShowLogs(false)} />
         )}
         {guardModalTarget && (
           <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
@@ -2699,7 +2696,7 @@ export default function PiratesGame() {
         {gameState.status === "finished" &&
           !activeModal &&
           modalQueue.length === 0 && (
-            <div className="fixed inset-0 bg-black/95 z-[100] flex flex-col items-center justify-center p-4 text-center">
+            <div className="fixed inset-0 top-14 bg-black/95 z-[150] flex flex-col items-center justify-center p-4 text-center">
               <Trophy
                 size={48}
                 className="text-yellow-400 mb-4 animate-bounce"
