@@ -165,6 +165,13 @@ const CARDS = {
 };
 
 // --- Helper Functions ---
+const getWinningCoinCount = (playerCount) => {
+  if (playerCount >= 6) return 3; // 6, 7, 8 players
+  if (playerCount === 5) return 4;
+  if (playerCount === 4) return 5;
+  return 6; // 2, 3 players
+};
+// --- Helper Functions ---
 const shuffle = (array) => {
   let currentIndex = array.length,
     randomIndex;
@@ -376,12 +383,13 @@ const GameGuideModal = ({ onClose }) => (
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-10 text-gray-300 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
+        {/* --- OBJECTIVE SECTION UPDATED --- */}
         <div className="bg-gradient-to-r from-red-900/30 to-orange-900/30 p-4 md:p-6 rounded-2xl border border-red-700/30">
           <h3 className="text-xl md:text-2xl font-bold text-white mb-3 flex items-center gap-3">
             <Trophy className="text-yellow-400 fill-current" size={24} /> The
             Objective
           </h3>
-          <p className="text-sm md:text-lg leading-relaxed">
+          <p className="text-sm md:text-lg leading-relaxed mb-4">
             The high seas are treacherous. Your goal is simple:{" "}
             <strong>survive</strong>. The game is played in multiple rounds. To
             win a round, you must be the <strong>Last Player Standing</strong>{" "}
@@ -390,11 +398,35 @@ const GameGuideModal = ({ onClose }) => (
             <br />
             <br />
             Survivors earn{" "}
-            <span className="text-yellow-400 font-bold">1 Coin</span>. The first
-            pirate to amass{" "}
-            <span className="text-yellow-400 font-bold">10 Coins</span> wins the
-            game and the treasure!
+            <span className="text-yellow-400 font-bold">1 Coin</span>. The
+            number of coins needed to win the game depends on the crew size:
           </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-black/40 border border-yellow-500/20 rounded-lg p-3 text-center">
+              <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">
+                2-3 Players
+              </div>
+              <div className="text-xl font-bold text-yellow-400">6 Coins</div>
+            </div>
+            <div className="bg-black/40 border border-yellow-500/20 rounded-lg p-3 text-center">
+              <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">
+                4 Players
+              </div>
+              <div className="text-xl font-bold text-yellow-400">5 Coins</div>
+            </div>
+            <div className="bg-black/40 border border-yellow-500/20 rounded-lg p-3 text-center">
+              <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">
+                5 Players
+              </div>
+              <div className="text-xl font-bold text-yellow-400">4 Coins</div>
+            </div>
+            <div className="bg-black/40 border border-yellow-500/20 rounded-lg p-3 text-center">
+              <div className="text-xs text-gray-400 uppercase tracking-wider mb-1">
+                6-8 Players
+              </div>
+              <div className="text-xl font-bold text-yellow-400">3 Coins</div>
+            </div>
+          </div>
         </div>
 
         <div>
@@ -1222,10 +1254,14 @@ export default function PiratesGame() {
       deck,
     };
 
+    // Calculate winning goal based on total player count
+    const winningGoal = getWinningCoinCount(players.length);
+
     if (actionNotification) {
       updateData.lastAction = actionNotification;
     }
 
+    // --- CASE 1: ONE SURVIVOR ---
     if (activePlayers.length === 1) {
       const winner = activePlayers[0];
       winner.coins += 1;
@@ -1242,8 +1278,8 @@ export default function PiratesGame() {
         round: currentState.roundCount || gameState.roundCount,
       };
 
-      // --- SKIP LAST ROUND RESULT IF GAME IS WON ---
-      if (winner.coins >= 10) {
+      // --- CHECK WIN CONDITION ---
+      if (winner.coins >= winningGoal) {
         await updateDoc(
           doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
           {
@@ -1279,18 +1315,13 @@ export default function PiratesGame() {
       return;
     }
 
-    // --- LOGIC FIX: Handle Empty Deck Showdown ---
-    // If player has 1 card but deck is empty, they cannot draw.
-    // Trigger End of Round comparison.
-    // Note: If turn player just played Merchant, hand might be empty momentarily, but Merchant logic handles refilling/nextTurn.
-    // This check runs before drawing a new card for the next player.
+    // --- CASE 2: DECK EMPTY (SHOWDOWN) ---
     if (deck.length === 0) {
       // Find highest card among survivors
       let maxVal = -1;
       let winners = [];
       activePlayers.forEach((p) => {
         if (p.hand.length > 0) {
-          // Safety check
           const val = CARDS[p.hand[0]].val;
           if (val > maxVal) {
             maxVal = val;
@@ -1319,13 +1350,14 @@ export default function PiratesGame() {
         round: currentState.roundCount || gameState.roundCount,
       };
 
-      if (players.some((p) => p.coins >= 10)) {
+      // --- CHECK WIN CONDITION ---
+      if (players.some((p) => p.coins >= winningGoal)) {
         await updateDoc(
           doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
           {
             ...updateData,
             status: "finished",
-            winnerId: players.find((p) => p.coins >= 10).id,
+            winnerId: players.find((p) => p.coins >= winningGoal).id,
             logs: arrayUnion(...uniqueLogs),
           }
         );
@@ -1359,8 +1391,8 @@ export default function PiratesGame() {
       nextIdx = (nextIdx + 1) % players.length;
     }
 
+    // --- CASE 3: THIEF SURVIVAL ---
     if (thiefActive && thiefActive.playerId === players[nextIdx].id) {
-      // Feedback for Thief Player
       if (players[nextIdx].id === user.uid) {
         triggerFeedback("success", "+1 COIN", "Survived as Thief", Coins);
       }
@@ -1373,11 +1405,11 @@ export default function PiratesGame() {
       });
       thiefActive = null;
 
-      // --- THIEF INSTANT WIN FIX ---
-      if (players[nextIdx].coins >= 10) {
+      // --- CHECK WIN CONDITION ---
+      if (players[nextIdx].coins >= winningGoal) {
         uniqueLogs.push({
           id: Date.now() + Math.random().toString(),
-          text: `🏆 ${players[nextIdx].name} collected 10 coins via Thief and WINS THE GAME!`,
+          text: `🏆 ${players[nextIdx].name} collected ${winningGoal} coins via Thief and WINS THE GAME!`,
           type: "success",
         });
 
@@ -1388,12 +1420,10 @@ export default function PiratesGame() {
             status: "finished",
             winnerId: players[nextIdx].id,
             logs: arrayUnion(...uniqueLogs),
-            // EXPLICITLY OMITTING 'lastRoundResult' prevents the Round End modal
           }
         );
-        return; // Stop execution
+        return;
       }
-      // -----------------------------
     }
 
     players[nextIdx].immune = false;
@@ -1497,10 +1527,12 @@ export default function PiratesGame() {
     };
 
     // Helper to calculate winner if deck empty during play (triggered by Cannoneer running out of cards)
+    // Helper to calculate winner if deck empty during play (triggered by Cannoneer running out of cards)
     const handleDeckEmptyEnd = async () => {
       let maxVal = -1;
       let winners = [];
       const activePlayers = players.filter((p) => !p.eliminated);
+      const winningGoal = getWinningCoinCount(players.length); // NEW
 
       activePlayers.forEach((p) => {
         const val = CARDS[p.hand[0]].val;
@@ -1536,16 +1568,17 @@ export default function PiratesGame() {
         round: gameState.roundCount,
       };
 
-      if (players.some((p) => p.coins >= 10)) {
+      // Check dynamic goal
+      if (players.some((p) => p.coins >= winningGoal)) {
         await updateDoc(
           doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
           {
             players,
             deck,
             status: "finished",
-            winnerId: players.find((p) => p.coins >= 10).id,
+            winnerId: players.find((p) => p.coins >= winningGoal).id,
             logs: arrayUnion(...uniqueLogs),
-            discardPile: arrayUnion(cardType), // Save played card
+            discardPile: arrayUnion(cardType),
             lastAction: actionNotification,
           }
         );
@@ -2542,7 +2575,7 @@ export default function PiratesGame() {
                     {me.coins}
                   </span>
                   <span className="text-[10px] md:text-xs text-gray-500 uppercase font-bold self-end mb-0.5 md:mb-1">
-                    / 10
+                    / {getWinningCoinCount(gameState.players.length)}
                   </span>
                 </div>
               </div>
