@@ -42,7 +42,7 @@ import {
   Compass,
   Trash2,
   History,
-  ArrowRight,
+  Component,
   Home,
   Zap,
   Hammer,
@@ -330,7 +330,7 @@ const InfoModal = ({
             {compareCard && (
               <>
                 <div className="font-bold text-xl text-gray-500">
-                  <ArrowRight size={24} />
+                  <Component size={24} />
                 </div>
                 <div className="flex flex-col items-center">
                   <span className="text-xs text-gray-400 mb-1 font-bold text-yellow-500">
