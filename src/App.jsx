@@ -249,7 +249,7 @@ const PiratesLogo = () => (
 
 const PiratesLogoBig = () => (
   <div className="flex items-center justify-center gap-1 opacity-40 mt-auto pb-2 pt-2 relative z-10">
-    <Ship size={20} className="text-red-500" />
+    <Ship size={22} className="text-red-500" />
     <span className="text-[20px] font-black tracking-widest text-red-500 uppercase">
       PIRATES
     </span>
