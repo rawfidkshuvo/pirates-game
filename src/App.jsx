@@ -247,6 +247,15 @@ const PiratesLogo = () => (
   </div>
 );
 
+const PiratesLogoBig = () => (
+  <div className="flex items-center justify-center gap-1 opacity-40 mt-auto pb-2 pt-2 relative z-10">
+    <Ship size={20} className="text-red-500" />
+    <span className="text-[20px] font-black tracking-widest text-red-500 uppercase">
+      PIRATES
+    </span>
+  </div>
+);
+
 const LeaveConfirmModal = ({
   onConfirmLeave,
   onConfirmLobby,
@@ -368,7 +377,7 @@ const GameGuideModal = ({ onClose }) => (
       <div className="p-4 md:p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800">
         <div className="flex flex-col">
           <h2 className="text-2xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-500 uppercase tracking-widest">
-            GAME GUIDE
+            Pirate's Secret Rules
           </h2>
           <span className="text-gray-400 text-xs md:text-sm font-medium tracking-wide">
             Deception, Deduction & Discovery
@@ -2124,14 +2133,14 @@ export default function PiratesGame() {
               disabled={loading}
               className="w-full sm:w-auto bg-gray-800 hover:bg-gray-700 border border-gray-600 px-6 py-3 rounded font-bold transition-colors"
             >
-              Join
+              Infiltrate Ship
             </button>
           </div>
           <button
             onClick={() => setShowGuide(true)}
             className="w-full text-sm text-gray-400 hover:text-white flex items-center justify-center gap-2 py-2"
           >
-            <BookOpen size={16} /> How to Play
+            <BookOpen size={16} /> Read Pirate's Plan
           </button>
         </div>
         <div className="absolute bottom-4 text-slate-600 text-xs text-center">
@@ -2161,6 +2170,7 @@ export default function PiratesGame() {
     return (
       <div className="min-h-screen bg-gray-950 text-white flex flex-col items-center justify-center p-6 relative">
         <FloatingBackground />
+        <PiratesLogoBig />
         {showLeaveConfirm && (
           <LeaveConfirmModal
             onCancel={() => setShowLeaveConfirm(false)}
@@ -2378,7 +2388,7 @@ export default function PiratesGame() {
               PIRATES
             </span>
             <span className="text-xs text-gray-500 bg-black/50 px-2 py-1 rounded">
-              Room {gameState.roomId}
+              SHIP'S CABIN
             </span>
           </div>
           <div className="flex gap-2">
