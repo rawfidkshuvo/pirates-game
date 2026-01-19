@@ -55,12 +55,12 @@ const firebaseConfig =
   typeof __firebase_config !== "undefined"
     ? JSON.parse(__firebase_config)
     : {
-        apiKey: "AIzaSyBjIjK53vVJW1y5RaqEFGSFp0ECVDBEe1o",
+        apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
         authDomain: "game-hub-ff8aa.firebaseapp.com",
-        projectId: "game-hub-ff8aa",
+        projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
         storageBucket: "game-hub-ff8aa.firebasestorage.app",
         messagingSenderId: "586559578902",
-        appId: "1:586559578902:web:4899548c3fd4da8c6aa637",
+        appId: "1:586559578902:web:4899548c3fd4da8c6aa637"
       };
 
 const app = initializeApp(firebaseConfig);
