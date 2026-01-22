@@ -623,7 +623,9 @@ const LogViewer = ({ logs, onClose }) => (
 export default function PiratesGame() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState("menu");
-  const [playerName, setPlayerName] = useState("");
+  const [playerName, setPlayerName] = useState(
+    () => localStorage.getItem("pirates_player_name") || ""
+  );
   const [roomId, setRoomId] = useState("");
   const [roomCodeInput, setRoomCodeInput] = useState("");
   const [gameState, setGameState] = useState(null);
@@ -694,7 +696,6 @@ export default function PiratesGame() {
             setView("menu");
             setError("The Captain abandoned the ship! (You were disconnected)");
             localStorage.removeItem("pirates_room_id");
-            localStorage.removeItem("pirates_player_name");
             setLoading(false);
             return;
           }
@@ -711,7 +712,6 @@ export default function PiratesGame() {
           setView("menu");
           setError("The ship has sunk! (Room Closed)");
           localStorage.removeItem("pirates_room_id");
-          localStorage.removeItem("pirates_player_name");
           setLoading(false);
         }
       }
@@ -1030,7 +1030,6 @@ export default function PiratesGame() {
     }
     // CLEAR SESSION
     localStorage.removeItem("pirates_room_id");
-    localStorage.removeItem("pirates_player_name");
 
     setRoomId("");
     setView("menu");
