@@ -623,9 +623,7 @@ const LogViewer = ({ logs, onClose }) => (
 export default function PiratesGame() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState("menu");
-  const [playerName, setPlayerName] = useState(
-    () => localStorage.getItem("pirates_player_name") || ""
-  );
+  
   const [roomId, setRoomId] = useState("");
   const [roomCodeInput, setRoomCodeInput] = useState("");
   const [gameState, setGameState] = useState(null);
@@ -652,6 +650,15 @@ export default function PiratesGame() {
   // Track last processed action to avoid duplicate popups
   const lastProcessedActionId = useRef(null);
   const lastProcessedRoundId = useRef(null);
+
+  //read and fill global name
+  const [playerName, setPlayerName] = useState(
+    () => localStorage.getItem("gameHub_playerName") || ""
+  );
+  //set global name for all game
+  useEffect(() => {
+    if (playerName) localStorage.setItem("gameHub_playerName", playerName);
+  }, [playerName]);
 
   // --- Auth & Listener ---
   useEffect(() => {
