@@ -190,7 +190,7 @@ const shuffle = (array) => {
 
 // NEW: Central Feedback Overlay
 const FeedbackOverlay = ({ type, message, subtext, icon: Icon }) => (
-  <div className="fixed inset-0 z-[160] flex items-center justify-center pointer-events-none">
+  <div className="fixed inset-0 z-160 flex items-center justify-center pointer-events-none">
     <div
       className={`
       flex flex-col items-center justify-center p-8 md:p-12 rounded-3xl border-4 shadow-[0_0_50px_rgba(0,0,0,0.8)] 
@@ -230,7 +230,7 @@ const FloatingBackground = ({ isShaking }) => (
       isShaking ? "animate-shake bg-red-900/20" : ""
     }`}
   >
-    <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-yellow-900/20 via-gray-950 to-black" />
+    <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(ellipse_at_top,var(--tw-gradient-stops))] from-yellow-900/20 via-gray-950 to-black" />
     <div className="absolute top-0 left-0 w-full h-full opacity-10">
       {[...Array(20)].map((_, i) => {
         const fruitKeys = Object.keys(CARDS);
@@ -238,7 +238,7 @@ const FloatingBackground = ({ isShaking }) => (
         return (
           <div
             key={i}
-            className="absolute animate-float text-white/20"
+            className="absolute animate-float text-white/60"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
@@ -293,7 +293,7 @@ const LeaveConfirmModal = ({
   isHost,
   inGame,
 }) => (
-  <div className="fixed inset-0 bg-black/90 z-[200] flex items-center justify-center p-4 animate-in fade-in">
+  <div className="fixed inset-0 bg-black/90 z-200 flex items-center justify-center p-4 animate-in fade-in">
     <div className="bg-gray-800 rounded-xl border border-gray-700 p-6 max-w-sm w-full text-center shadow-2xl">
       <h3 className="text-xl font-bold text-white mb-2">Abandon Ship?</h3>
       <p className="text-gray-400 mb-6 text-sm">
@@ -338,7 +338,7 @@ const InfoModal = ({
   compareCard = null,
   labels = [],
 }) => (
-  <div className="fixed inset-0 bg-black/90 z-[150] flex items-center justify-center p-4 animate-in fade-in">
+  <div className="fixed inset-0 bg-black/90 z-150 flex items-center justify-center p-4 animate-in fade-in">
     <div className="bg-gray-800 border-2 border-gray-600 rounded-xl p-6 w-full max-w-sm shadow-2xl relative">
       <div className="flex flex-col items-center text-center gap-4">
         {type === "error" ? (
@@ -402,11 +402,11 @@ const InfoModal = ({
 );
 
 const GameGuideModal = ({ onClose }) => (
-  <div className="fixed inset-0 bg-black/95 z-[170] flex items-center justify-center p-0 md:p-4">
+  <div className="fixed inset-0 bg-black/95 z-170 flex items-center justify-center p-0 md:p-4">
     <div className="bg-gray-900 md:rounded-2xl w-full max-w-5xl h-full md:h-auto md:max-h-[90vh] overflow-hidden border-none md:border border-gray-700 shadow-2xl flex flex-col">
       <div className="p-4 md:p-6 border-b border-gray-700 flex justify-between items-center bg-gray-800">
         <div className="flex flex-col">
-          <h2 className="text-2xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-500 uppercase tracking-widest">
+          <h2 className="text-2xl md:text-4xl font-black text-transparent bg-clip-text bg-linear-to-r from-red-400 to-orange-500 uppercase tracking-widest">
             Pirate's Secret Rules
           </h2>
           <span className="text-gray-400 text-xs md:text-sm font-medium tracking-wide">
@@ -423,7 +423,7 @@ const GameGuideModal = ({ onClose }) => (
 
       <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-10 text-gray-300 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
         {/* --- OBJECTIVE SECTION UPDATED --- */}
-        <div className="bg-gradient-to-r from-red-900/30 to-orange-900/30 p-4 md:p-6 rounded-2xl border border-red-700/30">
+        <div className="bg-linear-to-r from-red-900/30 to-orange-900/30 p-4 md:p-6 rounded-2xl border border-red-700/30">
           <h3 className="text-xl md:text-2xl font-bold text-white mb-3 flex items-center gap-3">
             <Trophy className="text-yellow-400 fill-current" size={24} /> The
             Objective
@@ -543,7 +543,7 @@ const GameGuideModal = ({ onClose }) => (
       <div className="p-4 md:p-6 bg-gray-800 border-t border-gray-700 text-center sticky bottom-0">
         <button
           onClick={onClose}
-          className="w-full md:w-auto bg-gradient-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white px-10 py-3 md:py-4 rounded-xl font-bold text-lg transition-all shadow-xl"
+          className="w-full md:w-auto bg-linear-to-r from-red-600 to-orange-600 hover:from-red-500 hover:to-orange-500 text-white px-10 py-3 md:py-4 rounded-xl font-bold text-lg transition-all shadow-xl"
         >
           Got it, Let's Play!
         </button>
@@ -621,7 +621,7 @@ const CardDisplay = ({ type, onClick, disabled, highlight, small, tiny }) => {
 };
 
 const LogViewer = ({ logs, onClose }) => (
-  <div className="fixed top-16 right-4 w-64 max-h-60 bg-gray-900/95 border border-gray-700 rounded-xl z-[155] overflow-y-auto p-2 shadow-2xl">
+  <div className="fixed top-16 right-4 w-64 max-h-60 bg-gray-900/95 border border-gray-700 rounded-xl z-155 overflow-y-auto p-2 shadow-2xl">
     <div className="bg-gray-800 w-full md:max-w-md h-full md:h-[70vh] rounded-none md:rounded-xl flex flex-col border-none md:border border-gray-700">
       <div className="p-4 border-b border-gray-700 flex justify-between items-center bg-gray-800">
         <h3 className="text-white font-bold text-lg">Game Log</h3>
@@ -2131,7 +2131,7 @@ export default function PiratesGame() {
             size={64}
             className="text-red-500 mx-auto mb-4 animate-bounce drop-shadow-[0_0_15px_rgba(239,68,68,0.5)]"
           />
-          <h1 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-red-500 to-orange-600 font-serif tracking-widest drop-shadow-md">
+          <h1 className="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-linear-to-b from-red-500 to-orange-600 font-serif tracking-widest drop-shadow-md">
             PIRATES
           </h1>
           <p className="text-white-400/60 tracking-[0.3em] uppercase mt-2">
@@ -2153,7 +2153,7 @@ export default function PiratesGame() {
           <button
             onClick={createRoom}
             disabled={loading}
-            className="w-full bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 p-4 rounded font-bold mb-4 flex items-center justify-center gap-2 border border-red-500/30 shadow-[0_0_15px_rgba(220,38,38,0.2)] transition-all"
+            className="w-full bg-linear-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 p-4 rounded font-bold mb-4 flex items-center justify-center gap-2 border border-red-500/30 shadow-[0_0_15px_rgba(220,38,38,0.2)] transition-all"
           >
             <Ship size={20} /> Create New Ship
           </button>
@@ -2418,7 +2418,7 @@ export default function PiratesGame() {
           />
         )}
         {showGuide && <GameGuideModal onClose={() => setShowGuide(false)} />}
-        <div className="h-14 bg-gray-900/80 border-b border-gray-800 flex items-center justify-between px-4 z-[160] backdrop-blur-md sticky top-0">
+        <div className="h-14 bg-gray-900/80 border-b border-gray-800 flex items-center justify-between px-4 z-160 backdrop-blur-md sticky top-0">
           <div className="flex items-center gap-2">
             <span className="font-serif text-red-500 font-bold tracking-wider hidden md:block">
               PIRATES
@@ -2560,7 +2560,7 @@ export default function PiratesGame() {
                       </div>
                     )}
                   </div>
-                  <div className="mt-1 md:mt-2 flex gap-0.5 justify-center flex-wrap max-w-[5rem] md:max-w-[8rem]">
+                  <div className="mt-1 md:mt-2 flex gap-0.5 justify-center flex-wrap max-w-20 md:max-w-32">
                     {p.playedCards &&
                       p.playedCards.map((c, idx) => (
                         <CardDisplay key={idx} type={c} tiny />
@@ -2713,7 +2713,7 @@ export default function PiratesGame() {
           <LogViewer logs={gameState.logs} onClose={() => setShowLogs(false)} />
         )}
         {guardModalTarget && (
-          <div className="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/80 z-100 flex items-center justify-center p-4">
             <div className="bg-gray-800 border-2 border-blue-500 rounded-xl p-4 md:p-6 w-full max-w-sm shadow-2xl animate-in fade-in zoom-in">
               <h3 className="text-lg md:text-xl font-bold text-white mb-4 flex items-center gap-2">
                 <Shield className="text-blue-400" />
@@ -2778,7 +2778,7 @@ export default function PiratesGame() {
         {gameState.status === "finished" &&
           !activeModal &&
           modalQueue.length === 0 && (
-            <div className="fixed inset-0 top-14 bg-black/95 z-[150] flex flex-col items-center justify-center p-4 text-center">
+            <div className="fixed inset-0 top-14 bg-black/95 z-150 flex flex-col items-center justify-center p-4 text-center">
               <Trophy
                 size={48}
                 className="text-yellow-400 mb-4 animate-bounce"
