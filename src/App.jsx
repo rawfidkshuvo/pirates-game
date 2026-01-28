@@ -1147,18 +1147,21 @@ export default function PiratesGame() {
       readyForNext: false,
     }));
 
-    // --- CHANGE STARTS HERE ---
-    let startIdx;
+    // --- FIXED ROTATION LOGIC ---
+    let startIdx = 0; // Default to 0
 
-    // Check if roundStarterIdx exists in the previous state (and isn't null/undefined)
+    // 1. Check if we have a recorded starter from the previous round
     if (state.roundStarterIdx !== undefined && state.roundStarterIdx !== null) {
-      // Rotate to the next player
-      startIdx = (state.roundStarterIdx + 1) % players.length;
+        // 2. Force it to be a Number to avoid "1" + 1 = "11" errors
+        const prevIdx = Number(state.roundStarterIdx); 
+        
+        // 3. Rotate cleanly
+        startIdx = (prevIdx + 1) % playerCount;
     } else {
-      // First round: Pick a random player
-      startIdx = Math.floor(Math.random() * players.length);
+        // First round ever: Pick random
+        startIdx = Math.floor(Math.random() * playerCount);
     }
-    // --- CHANGE ENDS HERE ---
+    // ----------------------------
 
     // Give the starting player their second card
     players[startIdx].hand.push(shuffledDeck.pop());
