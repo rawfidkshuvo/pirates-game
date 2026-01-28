@@ -56,11 +56,11 @@ const firebaseConfig =
     ? JSON.parse(__firebase_config)
     : {
         apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-        authDomain: "game-hub-ff8aa.firebaseapp.com",
+        authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
         projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-        storageBucket: "game-hub-ff8aa.firebasestorage.app",
-        messagingSenderId: "586559578902",
-        appId: "1:586559578902:web:4899548c3fd4da8c6aa637"
+        storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+        appId: import.meta.env.VITE_FIREBASE_APP_ID,
       };
 
 const app = initializeApp(firebaseConfig);
@@ -300,8 +300,8 @@ const LeaveConfirmModal = ({
         {isHost
           ? "Leaving will destroy the room for everyone!"
           : inGame
-          ? "Leaving now will end the game for you!"
-          : "Leaving the lobby will disconnect you."}
+            ? "Leaving now will end the game for you!"
+            : "Leaving the lobby will disconnect you."}
       </p>
       <div className="flex flex-col gap-3">
         <button
@@ -388,10 +388,10 @@ const InfoModal = ({
             type === "error"
               ? "bg-red-600 hover:bg-red-500"
               : type === "spy"
-              ? "bg-emerald-600 hover:bg-emerald-500"
-              : type === "round_end"
-              ? "bg-yellow-600 hover:bg-yellow-500"
-              : "bg-blue-600 hover:bg-blue-500"
+                ? "bg-emerald-600 hover:bg-emerald-500"
+                : type === "round_end"
+                  ? "bg-yellow-600 hover:bg-yellow-500"
+                  : "bg-blue-600 hover:bg-blue-500"
           }`}
         >
           {type === "round_end" ? "Continue" : "Okay"}
@@ -592,10 +592,10 @@ const CardDisplay = ({ type, onClick, disabled, highlight, small, tiny }) => {
             : "border-gray-700"
         }
         ${card.bg} ${
-        disabled
-          ? "opacity-50 cursor-not-allowed grayscale"
-          : "hover:scale-105 cursor-pointer"
-      }
+          disabled
+            ? "opacity-50 cursor-not-allowed grayscale"
+            : "hover:scale-105 cursor-pointer"
+        }
       `}
     >
       <div
@@ -637,8 +637,8 @@ const LogViewer = ({ logs, onClose }) => (
               log.type === "danger"
                 ? "bg-red-900/20 border-red-500 text-red-200"
                 : log.type === "success"
-                ? "bg-green-900/20 border-green-500 text-green-200"
-                : "bg-gray-700/50 border-gray-500 text-gray-300"
+                  ? "bg-green-900/20 border-green-500 text-green-200"
+                  : "bg-gray-700/50 border-gray-500 text-gray-300"
             }`}
           >
             {log.text}
@@ -653,7 +653,7 @@ const LogViewer = ({ logs, onClose }) => (
 export default function PiratesGame() {
   const [user, setUser] = useState(null);
   const [view, setView] = useState("menu");
-  
+
   const [roomId, setRoomId] = useState("");
   const [roomCodeInput, setRoomCodeInput] = useState("");
   const [gameState, setGameState] = useState(null);
@@ -683,7 +683,7 @@ export default function PiratesGame() {
 
   //read and fill global name
   const [playerName, setPlayerName] = useState(
-    () => localStorage.getItem("gameHub_playerName") || ""
+    () => localStorage.getItem("gameHub_playerName") || "",
   );
   //set global name for all game
   useEffect(() => {
@@ -751,7 +751,7 @@ export default function PiratesGame() {
           localStorage.removeItem("pirates_room_id");
           setLoading(false);
         }
-      }
+      },
     );
     return () => unsub();
   }, [roomId, user]);
@@ -788,21 +788,21 @@ export default function PiratesGame() {
                 "success",
                 "DEFENDED",
                 "Captain Killed Attacker!",
-                Crown
+                Crown,
               );
             } else if (action.message.includes("Pirate")) {
               triggerFeedback(
                 "failure",
                 "ELIMINATED",
                 "Cannon Hit Pirate!",
-                Skull
+                Skull,
               );
             } else {
               triggerFeedback(
                 "failure",
                 "UNDER ATTACK",
                 "Card Destroyed!",
-                Bomb
+                Bomb,
               );
             }
           } else if (
@@ -813,7 +813,7 @@ export default function PiratesGame() {
               "failure",
               "ELIMINATED",
               "Guard Caught You!",
-              Skull
+              Skull,
             );
           } else if (
             action.type === "GUARD" &&
@@ -823,7 +823,7 @@ export default function PiratesGame() {
               "neutral",
               "SAFE",
               "Guard Guessed Wrong",
-              CheckCircle
+              CheckCircle,
             );
           } else if (action.type === "SWORDSMAN") {
             if (action.message.includes("You Died")) {
@@ -845,8 +845,8 @@ export default function PiratesGame() {
                 action.type === "SWORDSMAN"
                   ? "sword"
                   : action.type === "SPY"
-                  ? "spy"
-                  : "warning",
+                    ? "spy"
+                    : "warning",
               card: action.cardToShow,
               compareCard: action.compareCard,
               labels: action.labels,
@@ -957,7 +957,7 @@ export default function PiratesGame() {
     };
     await setDoc(
       doc(db, "artifacts", APP_ID, "public", "data", "rooms", newId),
-      initialData
+      initialData,
     );
     // SAVE SESSION
     localStorage.setItem("pirates_room_id", newId);
@@ -980,7 +980,7 @@ export default function PiratesGame() {
       "public",
       "data",
       "rooms",
-      roomCodeInput
+      roomCodeInput,
     );
     const snap = await getDoc(ref);
     if (!snap.exists()) {
@@ -1041,7 +1041,7 @@ export default function PiratesGame() {
         "public",
         "data",
         "rooms",
-        roomId
+        roomId,
       );
       const snap = await getDoc(roomRef);
 
@@ -1103,7 +1103,7 @@ export default function PiratesGame() {
       doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
       {
         players: newPlayers,
-      }
+      },
     );
   };
 
@@ -1113,7 +1113,7 @@ export default function PiratesGame() {
       doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
       {
         deckConfig: { guards: newGuards, merchants: newMerchants },
-      }
+      },
     );
   };
 
@@ -1147,7 +1147,20 @@ export default function PiratesGame() {
       readyForNext: false,
     }));
 
-    const startIdx = Math.floor(Math.random() * players.length);
+    // --- CHANGE STARTS HERE ---
+    let startIdx;
+
+    // Check if roundStarterIdx exists in the previous state (and isn't null/undefined)
+    if (state.roundStarterIdx !== undefined && state.roundStarterIdx !== null) {
+      // Rotate to the next player
+      startIdx = (state.roundStarterIdx + 1) % players.length;
+    } else {
+      // First round: Pick a random player
+      startIdx = Math.floor(Math.random() * players.length);
+    }
+    // --- CHANGE ENDS HERE ---
+
+    // Give the starting player their second card
     players[startIdx].hand.push(shuffledDeck.pop());
 
     await updateDoc(
@@ -1159,6 +1172,7 @@ export default function PiratesGame() {
         players,
         discardPile: [],
         turnIndex: startIdx,
+        roundStarterIdx: startIdx, // <--- SAVE THIS so we can access it next round
         thiefActive: null,
         lastAction: null,
         lastRoundResult: null,
@@ -1169,7 +1183,7 @@ export default function PiratesGame() {
           } Started ---`,
           type: "neutral",
         }),
-      }
+      },
     );
   };
 
@@ -1179,7 +1193,7 @@ export default function PiratesGame() {
     players[myIdx].readyForNext = true;
     await updateDoc(
       doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
-      { players }
+      { players },
     );
   };
 
@@ -1207,7 +1221,7 @@ export default function PiratesGame() {
         winnerId: null,
         lastAction: null,
         lastRoundResult: null,
-      }
+      },
     );
   };
 
@@ -1274,14 +1288,14 @@ export default function PiratesGame() {
             type: "neutral",
           },
         ],
-      }
+      },
     );
   };
 
   const nextTurn = async (
     currentState,
     logs = [],
-    actionNotification = null
+    actionNotification = null,
   ) => {
     let players = [...currentState.players];
     let deck = [...currentState.deck];
@@ -1332,7 +1346,7 @@ export default function PiratesGame() {
             status: "finished",
             winnerId: winner.id,
             logs: arrayUnion(...uniqueLogs),
-          }
+          },
         );
         return;
       }
@@ -1346,7 +1360,7 @@ export default function PiratesGame() {
           ...updateData,
           roundCount: increment(1),
           logs: arrayUnion(...uniqueLogs),
-        }
+        },
       );
       setTimeout(
         () =>
@@ -1355,7 +1369,7 @@ export default function PiratesGame() {
             players,
             roundCount: (currentState.roundCount || gameState.roundCount) + 1,
           }),
-        3500
+        3500,
       );
       return;
     }
@@ -1404,7 +1418,7 @@ export default function PiratesGame() {
             status: "finished",
             winnerId: players.find((p) => p.coins >= winningGoal).id,
             logs: arrayUnion(...uniqueLogs),
-          }
+          },
         );
         return;
       }
@@ -1417,7 +1431,7 @@ export default function PiratesGame() {
           ...updateData,
           roundCount: increment(1),
           logs: arrayUnion(...uniqueLogs),
-        }
+        },
       );
       setTimeout(
         () =>
@@ -1426,7 +1440,7 @@ export default function PiratesGame() {
             players,
             roundCount: (currentState.roundCount || gameState.roundCount) + 1,
           }),
-        3500
+        3500,
       );
       return;
     }
@@ -1465,7 +1479,7 @@ export default function PiratesGame() {
             status: "finished",
             winnerId: players[nextIdx].id,
             logs: arrayUnion(...uniqueLogs),
-          }
+          },
         );
         return;
       }
@@ -1488,7 +1502,7 @@ export default function PiratesGame() {
 
     await updateDoc(
       doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
-      updateData
+      updateData,
     );
   };
 
@@ -1509,7 +1523,7 @@ export default function PiratesGame() {
   const handlePlayCard = async (
     cardType,
     explicitTargetId = null,
-    explicitGuess = null
+    explicitGuess = null,
   ) => {
     if (!user || gameState.players[gameState.turnIndex].id !== user.uid) return;
 
@@ -1544,7 +1558,7 @@ export default function PiratesGame() {
       showAlert(
         "Captain's Orders",
         "You MUST play the Captain if you hold a Cannoneer or Sailor!",
-        "error"
+        "error",
       );
       return;
     }
@@ -1625,7 +1639,7 @@ export default function PiratesGame() {
             logs: arrayUnion(...uniqueLogs),
             discardPile: arrayUnion(cardType),
             lastAction: actionNotification,
-          }
+          },
         );
       } else {
         await updateDoc(
@@ -1638,7 +1652,7 @@ export default function PiratesGame() {
             discardPile: arrayUnion(cardType),
             lastAction: actionNotification,
             lastRoundResult: roundResult,
-          }
+          },
         );
         setTimeout(
           () =>
@@ -1647,7 +1661,7 @@ export default function PiratesGame() {
               players,
               roundCount: gameState.roundCount + 1,
             }),
-          3500
+          3500,
         );
       }
     };
@@ -1676,7 +1690,7 @@ export default function PiratesGame() {
           triggerFeedback("success", "KILLED", "Guard Guess Correct!", Skull);
           eliminate(
             explicitTargetId,
-            `Guard caught a ${CARDS[finalGuess].name}`
+            `Guard caught a ${CARDS[finalGuess].name}`,
           );
           actionNotification = {
             id: Date.now(),
@@ -1727,7 +1741,7 @@ export default function PiratesGame() {
           "Spy Report",
           `${target.name} is holding: ${CARDS[target.hand[0]].name}`,
           "spy",
-          target.hand[0]
+          target.hand[0],
         );
         actionNotification = {
           id: Date.now(),
@@ -1778,14 +1792,14 @@ export default function PiratesGame() {
             "Sword Fight Result",
             `You challenged ${target.name}. Their ${CARDS[targetCardKey].name} beat your ${CARDS[myCardKey].name}. You Died.`,
             "sword",
-            targetCardKey
+            targetCardKey,
           );
         } else if (targetVal < myVal) {
           triggerFeedback(
             "success",
             "VICTORY",
             "Target Died (Lower Card)",
-            Trophy
+            Trophy,
           );
           eliminate(explicitTargetId, `Lost Sword Fight (Lower Card)`);
           logs.push({
@@ -1805,7 +1819,7 @@ export default function PiratesGame() {
             "Sword Fight Result",
             `You challenged ${target.name}. Your ${CARDS[myCardKey].name} beat their ${CARDS[targetCardKey].name}. You Won!`,
             "sword",
-            targetCardKey
+            targetCardKey,
           );
         } else {
           triggerFeedback("neutral", "TIED", "Both Survived", Sword);
@@ -1826,7 +1840,7 @@ export default function PiratesGame() {
             "Sword Fight Result",
             `Tie! You both have ${CARDS[myCardKey].name}.`,
             "sword",
-            targetCardKey
+            targetCardKey,
           );
         }
       } else {
@@ -1873,7 +1887,7 @@ export default function PiratesGame() {
             "failure",
             "BACKFIRE",
             "Hit Captain (You Died)",
-            Crown
+            Crown,
           );
           logs.push({
             text: `💣 ${me.name} fires Cannon at ${target.name}... It's a Captain! ${me.name} blows themselves up!`,
@@ -1995,7 +2009,7 @@ export default function PiratesGame() {
           logs: arrayUnion(...uniqueLogs),
           discardPile: arrayUnion(cardType),
           merchantState: { pool, originalDeckCount: deck.length },
-        }
+        },
       );
       setSelectedCard(null);
       setSelectedGuess("");
@@ -2049,7 +2063,7 @@ export default function PiratesGame() {
       doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
       {
         discardPile: arrayUnion(cardType),
-      }
+      },
     );
 
     await nextTurn(
@@ -2063,7 +2077,7 @@ export default function PiratesGame() {
         roundCount: gameState.roundCount,
       },
       logs,
-      actionNotification
+      actionNotification,
     );
   };
 
@@ -2082,7 +2096,7 @@ export default function PiratesGame() {
       doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
       {
         merchantState: null,
-      }
+      },
     );
 
     await nextTurn(
@@ -2102,7 +2116,7 @@ export default function PiratesGame() {
           } used Merchant to draw cards and kept one.`,
           type: "neutral",
         },
-      ]
+      ],
     );
   };
 
@@ -2751,7 +2765,7 @@ export default function PiratesGame() {
                     handlePlayCard(
                       "GUARD",
                       guardModalTarget,
-                      guardPendingGuess
+                      guardPendingGuess,
                     );
                     setGuardModalTarget(null);
                     setGuardPendingGuess(null);
