@@ -1118,8 +1118,20 @@ export default function PiratesGame() {
   };
 
   const startRound = async (existingState = null) => {
-    const state = existingState || gameState;
+    // FIX 1: Merge existingState on top of gameState to ensure we don't lose
+    // properties (like roundStarterIdx) if existingState is incomplete.
+    const state = existingState
+      ? { ...gameState, ...existingState }
+      : gameState;
+
     const playerCount = state.players.length;
+
+    // --- DEBUG LOGS START ---
+    console.log("=== STARTING ROUND DEBUG ===");
+    console.log("Round Number:", state.roundCount || gameState.roundCount);
+    console.log("Previous Starter Index:", state.roundStarterIdx);
+    console.log("Type of Starter:", typeof state.roundStarterIdx);
+    // ------------------------
 
     let config = state.deckConfig || { guards: 6, merchants: 2 };
     if (playerCount > 4) {
@@ -1148,18 +1160,20 @@ export default function PiratesGame() {
     }));
 
     // --- FIXED ROTATION LOGIC ---
-    let startIdx = 0; // Default to 0
+    let startIdx = 0;
 
-    // 1. Check if we have a recorded starter from the previous round
     if (state.roundStarterIdx !== undefined && state.roundStarterIdx !== null) {
-        // 2. Force it to be a Number to avoid "1" + 1 = "11" errors
-        const prevIdx = Number(state.roundStarterIdx); 
-        
-        // 3. Rotate cleanly
-        startIdx = (prevIdx + 1) % playerCount;
+      // FIX 2: Ensure it is a Number to prevent "1" + 1 = "11"
+      const prevIdx = Number(state.roundStarterIdx);
+
+      startIdx = (prevIdx + 1) % playerCount;
+
+      console.log(
+        `Calculation: (${prevIdx} + 1) % ${playerCount} = ${startIdx}`,
+      );
     } else {
-        // First round ever: Pick random
-        startIdx = Math.floor(Math.random() * playerCount);
+      startIdx = Math.floor(Math.random() * players.length);
+      console.log("First Round (or missing data) - Random Start:", startIdx);
     }
     // ----------------------------
 
@@ -1175,7 +1189,7 @@ export default function PiratesGame() {
         players,
         discardPile: [],
         turnIndex: startIdx,
-        roundStarterIdx: startIdx, // <--- SAVE THIS so we can access it next round
+        roundStarterIdx: startIdx, // Save for next time
         thiefActive: null,
         lastAction: null,
         lastRoundResult: null,
@@ -1183,7 +1197,7 @@ export default function PiratesGame() {
           id: Date.now() + Math.random().toString(),
           text: `--- Round ${
             state.roundCount || gameState.roundCount
-          } Started ---`,
+          } Started (Player ${startIdx + 1} begins) ---`,
           type: "neutral",
         }),
       },
@@ -1229,10 +1243,11 @@ export default function PiratesGame() {
   };
 
   // --- RESTART GAME LOGIC (Host Only) ---
+  // --- RESTART GAME LOGIC (Host Only) ---
   const restartGame = async () => {
     if (!gameState || gameState.hostId !== user.uid) return;
 
-    // 1. Reset all players to clean slate (0 coins)
+    // 1. Reset all players
     const players = gameState.players.map((p) => ({
       ...p,
       hand: [],
@@ -1243,7 +1258,7 @@ export default function PiratesGame() {
       readyForNext: false,
     }));
 
-    // 2. Generate and Shuffle Deck
+    // 2. Deck Config
     let config = gameState.deckConfig || { guards: 6, merchants: 2 };
     if (players.length > 4) config = { guards: 6, merchants: 2 };
 
@@ -1258,17 +1273,16 @@ export default function PiratesGame() {
     const shuffledDeck = shuffle(deck);
     const burntCard = shuffledDeck.pop();
 
-    // 3. Deal Initial Cards
     const playersWithCards = players.map((p) => ({
       ...p,
       hand: [shuffledDeck.pop()],
     }));
 
-    // 4. Select Start Player and Deal Second Card
+    // 3. Random start for fresh game
     const startIdx = Math.floor(Math.random() * playersWithCards.length);
     playersWithCards[startIdx].hand.push(shuffledDeck.pop());
 
-    // 5. Update Firestore
+    // 4. Update Firestore
     await updateDoc(
       doc(db, "artifacts", APP_ID, "public", "data", "rooms", roomId),
       {
@@ -1278,12 +1292,12 @@ export default function PiratesGame() {
         players: playersWithCards,
         discardPile: [],
         turnIndex: startIdx,
+        roundStarterIdx: startIdx, // <--- ADD THIS LINE TO SAVE THE STARTER
         thiefActive: null,
         lastAction: null,
         lastRoundResult: null,
         roundCount: 1,
         winnerId: null,
-        // CHANGED: We pass a new array to overwrite/clear old logs
         logs: [
           {
             id: Date.now().toString(),
