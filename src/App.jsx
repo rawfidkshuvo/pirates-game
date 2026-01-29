@@ -47,6 +47,7 @@ import {
   Zap,
   Hammer,
   Sparkles,
+  Copy,
 } from "lucide-react";
 
 // --- Firebase Config & Init ---
@@ -1108,6 +1109,21 @@ export default function PiratesGame() {
         players: newPlayers,
       },
     );
+  };
+
+  const copyToClipboard = () => {
+    try {
+      navigator.clipboard.writeText(roomId);
+      triggerFeedback("neutral", "COPIED!", "", CheckCircle);
+    } catch (e) {
+      const el = document.createElement("textarea");
+      el.value = roomId;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      triggerFeedback("neutral", "COPIED!", "", CheckCircle);
+    }
   };
 
   const updateDeckConfig = async (newGuards, newMerchants) => {
@@ -2255,9 +2271,19 @@ export default function PiratesGame() {
         )}
         <div className="z-10 w-full max-w-lg bg-gray-900/90 backdrop-blur p-8 rounded-2xl border border-red-900/50 shadow-2xl mb-4">
           <div className="flex justify-between items-center mb-8 border-b border-gray-700 pb-4">
-            <h2 className="text-2xl font-serif text-red-500">
-              Cabin: <span className="text-white font-mono">{roomId}</span>
-            </h2>
+            {/* Grouping Title and Copy Button together on the left */}
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl font-serif text-red-500">
+                Cabin: <span className="text-white font-mono">{roomId}</span>
+              </h2>
+              <button
+                onClick={copyToClipboard}
+                className="p-2 hover:bg-white/10 rounded-full transition-colors text-gray-400 hover:text-white"
+                title="Copy Room ID"
+              >
+                <Copy size={16} />
+              </button>
+            </div>
             <button
               onClick={() => setShowLeaveConfirm(true)}
               className="p-2 bg-red-900/30 hover:bg-red-900/50 rounded text-red-300"
