@@ -733,6 +733,7 @@ export default function PiratesGame() {
             setView("menu");
             setError("The Captain abandoned the ship! (You were disconnected)");
             localStorage.removeItem("pirates_room_id");
+            localStorage.removeItem("pirates_player_name");
             setLoading(false);
             return;
           }
@@ -749,6 +750,7 @@ export default function PiratesGame() {
           setView("menu");
           setError("The ship has sunk! (Room Closed)");
           localStorage.removeItem("pirates_room_id");
+          localStorage.removeItem("pirates_player_name");
           setLoading(false);
         }
       },
@@ -1067,6 +1069,7 @@ export default function PiratesGame() {
     }
     // CLEAR SESSION
     localStorage.removeItem("pirates_room_id");
+    localStorage.removeItem("pirates_player_name");
 
     setRoomId("");
     setView("menu");
