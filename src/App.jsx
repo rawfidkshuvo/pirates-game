@@ -2672,7 +2672,7 @@ export default function PiratesGame() {
           </div>
           <div className="pointer-events-none z-0 my-2 flex flex-col items-center space-y-2 opacity-80 w-full px-4">
             {gameState.logs
-              .slice(-2)
+              .slice(-3)
               .reverse()
               .map((l, i) => (
                 <div
