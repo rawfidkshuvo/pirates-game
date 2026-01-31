@@ -1802,7 +1802,7 @@ export default function PiratesGame() {
           id: Date.now(),
           targetId: explicitTargetId,
           type: "SPY",
-          message: `${me.name} used a Spy to look at your hand.`,
+          message: `${me.name} used a Spy to look at your hand.\n\n🔍 **${CARDS[target.hand[0]].name}**`,
         };
       } else {
         triggerFeedback("failure", "IMMUNE", "Target Protected", Shield);
